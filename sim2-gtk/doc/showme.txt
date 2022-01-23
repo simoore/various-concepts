@@ -1,0 +1,13 @@
+sim
+	block
+		move NE
+		rest 200
+		breed N
+		hunt E
+		bob = 450
+		new = add 4 5
+		if (new == 9) then
+			breed W
+		end
+	end
+end
