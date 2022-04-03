@@ -7,7 +7,7 @@
 class Soundex {
 public:
     std::string encode(const std::string &word) const {
-        return zeroPad(upperFront(head(word)) + encodedDigits(tail(word)));
+        return zeroPad(upperFront(head(word)) + tail(encodedDigits(word)));
     }
 
     std::string encodedDigit(char letter) const {
@@ -47,20 +47,36 @@ private:
 
     std::string encodedDigits(const std::string &word) const {
         std::string encoding;
-        for (auto letter : word) {
-            if (isComplete(encoding)) {
-                break;
-            }
-            auto digit = encodedDigit(letter);
-            if (digit != NotADigit && digit != lastDigit(encoding)) {
-                encoding += encodedDigit(letter);
-            }
-        }
+        encodeHead(encoding, word);
+        encodeTail(encoding, word);
         return encoding;
     }
 
+    void encodeHead(std::string &encoding, const std::string &word) const {
+        encoding += encodedDigit(word.front());
+    }
+
+    void encodeTail(std::string &encoding, const std::string &word) const {
+        for (auto i = 1u; i < word.length(); i++) {
+            if (!isComplete(encoding)) {
+                encodeLetter(encoding, word[i], word[i - 1]);
+            }
+        }
+    }
+
+    void encodeLetter(std::string &encoding, char letter, char lastLetter) const {
+        auto digit = encodedDigit(letter);
+        if (digit != NotADigit && (digit != lastDigit(encoding) || isVowel(lastLetter))) {
+            encoding += encodedDigit(letter);
+        }
+    }
+
     bool isComplete(const std::string &encoding) const {
-        return encoding.length() == MaxCodeLength - 1;
+        return encoding.length() == MaxCodeLength;
+    }
+
+    bool isVowel(char letter) const {
+        return std::string("aeiouy").find(lower(letter)) != std::string::npos;
     }
 
     std::string lastDigit(const std::string &encoding) const {

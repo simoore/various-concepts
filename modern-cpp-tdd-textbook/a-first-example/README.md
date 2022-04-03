@@ -10,4 +10,4 @@ cmake .. -G "Unix Makefiles"
 make
 ```
 
-After the first run, you can rebuild the make file without the `-G` option.
+After the first run, you can rebuild the makefile without the `-G` option.
