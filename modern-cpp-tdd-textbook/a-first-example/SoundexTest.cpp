@@ -1,10 +1,7 @@
 #include "gmock/gmock.h"
 #include "Soundex.h"
 
-// up to 2.15
-
-using namespace std;
-using namespace testing;
+using namespace ::testing;
 
 // Google test will create a single instance of this test fixuture class per test.
 // Use the TEST_F macro rather than TEST macro to access this class in the tests.
@@ -72,5 +69,3 @@ int main(int argc, char** argv) {
     InitGoogleMock(&argc, argv);
     return RUN_ALL_TESTS();
 }
-
-// up to section 2.4
