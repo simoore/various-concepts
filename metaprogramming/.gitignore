@@ -1,1 +1,3 @@
-*.exe
+meta
+meta.exe
+comms.cpp
