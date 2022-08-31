@@ -1,93 +1,111 @@
-// lvalues and rvalues in C++
-// https://www.youtube.com/watch?v=fbYknr-HPYE
-//
 // Move Semantics in C++
 // https://www.youtube.com/watch?v=ehMg6zvXuMY
 //
-// You can assign either an rvalue or lvalue to an lvalue. lvalues have explicity storage associated with them.
-// You cannot assign anthing to an rvalue (it is temporary)
-// Only lvalues can be assigned to an lvalue reference, and only rvalues can be assigned to rvalue references. This
-// allows a function to distinguish between cases where storage has been allocated for a variable for use elsewhere,
-// or if the value is temporary and it's resources will disappear after the function is called. This allows some
-// optimization of resources to be performed using move semantics. 
-// Normal function parameters are lvalues.
+// std::move and the Move Assignment Operator in C++
+//https://www.youtube.com/watch?v=OWNeCTd7yQE
 //
-// The reason we want to use rvalues is that there is no ownership of its resources. If we pass an rvalue to a function
-// we can take the resources assocuated with that object and use it for something else as we know the value is 
-// temporary.
-//
-// The storage
+// In converting a variable to an rvalue reference using std::move, you are essentially making the variable as 
+// temporary and its resources can be taken by a move contructor or move assignment operator.
 
 #include <iostream>
+#include <cstring>
 
-// This is returning a rvalue.
-int getValue() {
-    return 10;
-}
+class String {
+public:
+    String() = default;
+    
+    String(const char *string) {
+        printf("Created!\n");
+        mSize = std::strlen(string);
+        mData = new char[mSize];
+        memcpy(mData, string, mSize);
+    }
 
-// This is returning a lvalue reference. It has storage associated with the return type.
-int &getValueRef() {
-    static int value = 10;
-    return value;
-}
+    // The copy constructor (as identified by taking in a const lvalue reference of another instance of this object) 
+    // just copies data out of the other object. The const enforces that the original object is unchanged.
+    String(const String &other) {
+        printf("Copied!\n");
+        mSize = other.mSize;
+        mData = new char[mSize];
+        memcpy(mData, other.mData, mSize);
+    }
 
-// This parameter is an lvalue. It will be assigned to by either an lvalue or rvalue when the function is called.
-// There is memory associated with the lvalue parameter.
-void setValue(int value) {
-    value++;
-    std::cout << value << std::endl;
-}
+    // An rvalue reference must call this function, but within the function and expression using just `other` is an
+    // lvalue. It is convention that the move contructor perform a shallow copy and then null the input `other` 
+    // object to perform the move.
+    String(String &&other) noexcept {
+        printf("Moved!\n");
+        mSize = other.mSize;
+        mData = other.mData;
+        other.mSize = 0;
+        other.mData = nullptr;
+    }
 
-void setValueRef(int &value) {
-    value++;
-    std::cout << "[lvalue]: " << value << std::endl;
-}
+    // The move assignment needs to delete existing data then perform the operations of the move constructor.
+    // Also don't try do a move it `other` is this because you delete the data than try and copy the data you just
+    // deleted and its messy.
+    String& operator=(String &&other) noexcept {
+        printf("Move assignment\n");
+        if (this == &other) {
+            return *this;
+        }
+        delete[] mData;
+        mSize = other.mSize;
+        mData = other.mData;
+        other.mSize = 0;
+        other.mData = nullptr;
+        return *this;
+    }
 
-// This how we can accept temporary rvalues into a function. We use an rvalue reference. This allows us to distinguish
-// between an lvalue reference that 
-void setValueRef(int &&value) {
-    std::cout << "[rvalue]: " << value << std::endl;
-}
+    ~String() {
+        printf("Destroyed\n");
+        delete[] mData;
+    }
 
-void printString(std::string &str) {
-    std::cout << "[lvalue]: " << str << std::endl;
-}
+    void print() {
+        printf("%.*s\n", mSize, mData);
+    }
 
-void printString(std::string &&str) {
-    std::cout << "[rvalue]: " << str << std::endl;
-}
+private:
+    char *mData{nullptr};
+    uint32_t mSize{0};
+};
+
+class Entity {
+public:
+    Entity(const String &name): mName(name) {}
+
+    // This function is called using a rvalue reference (temporary value), however, an expression inside the function
+    // that is just the parameter `name` is an lvalue because it is no longer temporary in the context of the function.
+    // Thus the std::move is required to cast it back to an rvalue reference to call the move constructor.
+    Entity(String &&name): mName(std::move(name)) {}
+
+    void printName() {
+        mName.print();
+    }
+
+private:
+    String mName;
+};
 
 int main() {
-    // rvalue are temporary values, they have no allocated address or storage. These include literal constants and 
-    // return values. rvalues can never be on the LHS of the assignment. In this expression i is an lvalue and 10 is 
-    // an rvalue.
-    int i = 10;
+    //Entity entity("Steve");
+    //entity.printName();
+    
+    String apple = "apple";
+    String dest;
 
-    // getValueRef returns a modifiable lvalue reference, thus this kind of expression is allowed.
-    getValueRef() = 12; 
-    std::cout << getValueRef() << std::endl;
+    std::cout << "Apple: ";
+    apple.print();
+    std::cout << "Dest: ";
+    dest.print();
 
-    // We can call setvalue from either a lvalue or rvalue. The value parameter of the setValue() function is an lvalue.
-    // It will have memory allocated and an assignment operation will take place from the passed in lvalue or rvalue.
-    setValue(i);
-    setValue(11);
+    // move assignment
+    dest = std::move(apple);
 
-    // You cannot make an lvalue reference from an rvalue, thus only lvalue can be passed to this setValueRef. However,
-    // if it is a const lvalue reference, we can assign it an rvalue as the compiler will allocate storage for it. So
-    // if the input to setValueRef was a const lvalue reference we could pass it literals directly like setValue.
-    setValueRef(i);
-    const int &a = 10;
-
-    // If we create an overloaded function that accepts an rvalue, we can know pass the temporary rvalue to a function.
-    setValueRef(13);
-
-    // The result of intermediate computations is also an rvalue. For example, here str1, str2, and concat are lvalues
-    // while the two literal strings and the expression (str1 + str2) are rvalues. We can call the two overloaded 
-    // versions of the print string function - one using lvalue references and one using rvalue references using 
-    // the lvalue concat, and the rvalue (str1 + str2).
-    std::string str1 = "This ";
-    std::string str2 = "is a string.";
-    std::string concat = str1 + str2;
-    printString(concat);
-    printString(str1 + str2);
+    std::cout << "Apple: ";
+    apple.print();
+    std::cout << "Dest: ";
+    dest.print();
+    
 }
