@@ -67,8 +67,6 @@ void addElem(auto container, auto value) {
     }
 }
 
-// Upto 3.3 in C++20 The Complete Guide
-
 int main() {
     int x = 42;
     int y = 77;

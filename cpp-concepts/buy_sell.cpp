@@ -2,6 +2,7 @@
 #include <iostream>
 #include <map>
 #include <numeric>
+#include <ranges>
 #include <set>
 #include <sstream>
 #include <string>
@@ -198,7 +199,43 @@ public:
     // PUBLIC FUNCTIONS
     ///////////////////////////////////////////////////////////////////////////
 
-    std::vector<Trade> executeTrade(Order &newOrder) {\
+    std::vector<Trade> executeTrade2(Order &newOrder) {
+        std::vector<Trade> trades;
+        auto &otherOrders = (newOrder.isOffer()) ? mBids : mOffers;
+        int totalTradeSize = 0;
+
+        auto matchTrade = [&](const Order &order) -> bool {
+            if (newOrder.remaining() > totalTradeSize && newOrder.canTrade(order)) {
+                totalTradeSize += order.remaining();
+                return true;
+            }
+            return false;
+        };
+
+        auto executeTrade = [&](Order order) -> Order {
+            std::cout << "Executing trade" << endl;
+            trades.push_back(newOrder.trade(order));
+            return order;
+        };
+
+        auto orders = otherOrders | std::views::take_while(matchTrade) | std::views::transform(executeTrade);
+
+        for (const Order &order : orders) {
+            otherOrders.erase(order);
+            if (!order.empty()) {
+                otherOrders.insert(order);
+            }
+        }
+
+        if (!newOrder.empty()) {
+            // If new order is not empty, add into list of existing orders.
+            auto &orderSet = (newOrder.isOffer()) ? mOffers : mBids;
+            orderSet.insert(newOrder);
+        }
+        return trades;
+    }
+
+    std::vector<Trade> executeTrade(Order &newOrder) {
         std::vector<Trade> trades;
         auto &otherOrders = (newOrder.isOffer()) ? mBids : mOffers;
         for (auto it = otherOrders.begin(); it != otherOrders.end();) {
@@ -230,7 +267,7 @@ public:
 
     void addNewOrder(Order newOrder) {
         cout << "Adding order to: " << mName << " " << newOrder.toString() << endl;
-        auto trades = executeTrade(newOrder);
+        auto trades = executeTrade2(newOrder);
         printOrders();
         for (const auto &trade : trades) {
             mProfit += trade.mProfit;
