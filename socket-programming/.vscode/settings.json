@@ -12,6 +12,7 @@
             }
         }
     },
+    "terminal.integrated.defaultProfile.windows": "Cygwin64",
     "files.associations": {
         "array": "cpp",
         "atomic": "cpp",
