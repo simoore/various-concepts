@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+message SimpleMessage {
+    int32 luckyNumber = 1;
+}
+
+message Heartbeat {
+    float percentIdle = 1;
+}
+
+message Measurements {
+    repeated int32 samples = 1;
+}
+
+message LogMessage {
+    string message = 1;
+}
+
+message Config {
+    message SensorParameters {
+        double nominalBias = 1;
+        double nominalScaleFactor = 2;
+        double biasPerDegC = 3;
+        double scaleFactorPerDegC = 4;
+        string sensorId = 5;
+    }
+
+    SensorParameters sensor0Params = 1;
+    SensorParameters sensor1Params = 2;
+    SensorParameters sensor2Params = 3;
+    SensorParameters sensor3Params = 4;
+}

@@ -1,0 +1,27 @@
+{
+    "configurations": [
+        {
+            "name": "Windows",
+            "intelliSenseMode": "windows-gcc-x64",
+            "includePath": [
+                "${workspaceFolder}/include",
+                "${workspaceFolder}/proto",
+                "${workspaceFolder}/build-debug/_deps/nanopb-src"
+            ],
+            "defines": [],
+            "forcedInclude": [],
+            "compilerPath": "C:\\msys64\\mingw64\\bin\\gcc.exe",
+            "cStandard": "c11",
+            "cppStandard": "c++23",
+            "compileCommands": "",
+            "browse": {
+                "path": [
+                    "${workspaceFolder}"
+                ],
+                "limitSymbolsToIncludedHeaders": true,
+                "databaseFilename": ""
+            }
+        }
+    ],
+    "version": 4
+}
