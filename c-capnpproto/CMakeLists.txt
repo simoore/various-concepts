@@ -41,6 +41,3 @@ add_custom_command(
 
 add_executable(CapnpApp src/main.cpp ${CMAKE_SOURCE_DIR}/capnp/addressbook.capnp.c)
 target_link_libraries(CapnpApp PRIVATE CCapnp)
-
-# TODO: set paths so this isn't needed
-target_link_options(CapnpApp PRIVATE -static-libasan -static-libgcc -static-libstdc++)

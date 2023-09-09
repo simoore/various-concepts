@@ -75,6 +75,7 @@ int main() {
     // if the input to setValueRef was a const lvalue reference we could pass it literals directly like setValue.
     setValueRef(i);
     const int &a = 10;
+    static_cast<void>(a);
 
     // If we create an overloaded function that accepts an rvalue, we can know pass the temporary rvalue to a function.
     setValueRef(13);

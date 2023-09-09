@@ -2,13 +2,14 @@
 // https://www.youtube.com/watch?v=ehMg6zvXuMY
 //
 // std::move and the Move Assignment Operator in C++
-//https://www.youtube.com/watch?v=OWNeCTd7yQE
+// https://www.youtube.com/watch?v=OWNeCTd7yQE
 //
 // In converting a variable to an rvalue reference using std::move, you are essentially making the variable as 
 // temporary and its resources can be taken by a move contructor or move assignment operator.
 
 #include <iostream>
 #include <cstring>
+#include <cstdint>
 
 class String {
 public:

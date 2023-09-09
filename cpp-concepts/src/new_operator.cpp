@@ -1,3 +1,4 @@
+#include <cstdlib>
 #include <iostream>
 #include <memory>
 
@@ -78,7 +79,8 @@ int main() {
     std::cout << std::endl << ">> Using std::uninitialized_copy" << std::endl;
     const char *v[] = {"This", "is", "an", "example"};
     auto sz = std::size(v);
-    if(void *pbuf = std::aligned_alloc(alignof(std::string), sizeof(std::string) * sz)) {
+    // std::aligned_alloc doesn't seem to be on all platforms
+    if(void *pbuf = _aligned_malloc(alignof(std::string), sizeof(std::string) * sz)) {
         try {
             auto first = static_cast<std::string*>(pbuf);
             auto last = std::uninitialized_copy(std::begin(v), std::end(v), first);

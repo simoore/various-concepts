@@ -82,7 +82,20 @@
     "any": "cpp",
     "buffer": "cpp",
     "netfwd": "cpp",
-    "numbers": "cpp"
+    "numbers": "cpp",
+    "semaphore": "cpp",
+    "span": "cpp",
+    "strstream": "cpp",
+    "charconv": "cpp",
+    "codecvt": "cpp",
+    "coroutine": "cpp",
+    "csignal": "cpp",
+    "source_location": "cpp",
+    "format": "cpp",
+    "future": "cpp",
+    "shared_mutex": "cpp",
+    "barrier": "cpp",
+    "latch": "cpp"
   },
   "cmake.configureOnOpen": true
 }
