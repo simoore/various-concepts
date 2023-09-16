@@ -388,6 +388,38 @@ void run() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// JThread
+// -------
+// An automatically joinable and interruptable thread
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+namespace jthread {
+
+void doSomeWork(std::stop_token token) {
+    int counter = 0;
+    while (counter < 10) {
+        if (token.stop_requested()) {
+            break;
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(200));
+        std::cout << counter << ") Do some work" << std::endl;
+        counter++;
+    }
+    
+}
+
+void run() {
+    // First benefit - you don't have to call join.
+    // Second benefit - you can provide a stop_token to signal to the thread to stop. The stop_token should be
+    // the last parameter in the thread argument list.
+    std::jthread thread1(doSomeWork);
+    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+    thread1.request_stop();
+}
+
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 int main() {
     threads::run();
