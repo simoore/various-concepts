@@ -431,4 +431,5 @@ int main() {
     usefulfunctions::run();
     parallelaccumulate::run();
     threadlocal::run();
+    jthread::run();
 }

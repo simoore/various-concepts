@@ -1,0 +1,14 @@
+{
+    "terminal.integrated.defaultProfile.windows": "VSDev",
+    "terminal.integrated.profiles.windows": {
+        "VSDev": {
+            "label": "VSDev",
+            "path": "cmd.exe",
+            "args": [
+                "/k",
+                "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Auxiliary\\Build\\vcvars64.bat"
+            ],
+            "env": {}
+        }
+    }
+}
