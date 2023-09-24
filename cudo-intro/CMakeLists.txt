@@ -3,6 +3,7 @@ project(CudaIntro LANGUAGES CXX CUDA)
 
 set(CMAKE_CXX_STANDARD 20)
 
-#add_executable(CudaIntro src/main.cpp)
 add_executable(CudaHello src/hello.cu)
+add_executable(CudaProp src/properties.cu)
+add_executable(CudaSum src/kernel.cu)
 
