@@ -8,3 +8,7 @@ Installation of Dependencies:
 pacman -S mingw-w64-ucrt-x86_64-eigen3
 pacman -S mingw-w64-ucrt-x86_64-SDL2_ttf
 ```
+
+## References
+
+<https://github.com/rlabbe/Kalman-and-Bayesian-Filters-in-Python>

@@ -17,6 +17,10 @@ add_executable(KalmanFilterLinear ${CommonSources} src/kalmanfilter_lkf_student.
 target_compile_definitions(KalmanFilterLinear PRIVATE _USE_MATH_DEFINES)
 target_link_libraries(KalmanFilterLinear mingw32 SDL2main SDL2 SDL2_ttf Eigen3::Eigen)
 
+add_executable(KalmanFilterExtended ${CommonSources} src/kalmanfilter_ekf_student.cpp)
+target_compile_definitions(KalmanFilterExtended PRIVATE _USE_MATH_DEFINES)
+target_link_libraries(KalmanFilterExtended mingw32 SDL2main SDL2 SDL2_ttf Eigen3::Eigen)
+
 # Copies the font file into the build directory
 add_custom_command(TARGET KalmanFilterLinear PRE_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory

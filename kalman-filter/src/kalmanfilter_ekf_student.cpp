@@ -1,10 +1,5 @@
 // ------------------------------------------------------------------------------- //
 // Advanced Kalman Filtering and Sensor Fusion Course - Extended Kalman Filter
-//
-// ####### STUDENT FILE #######
-//
-// Usage:
-// -Rename this file to "kalmanfilter.cpp" if you want to use this code.
 
 #include "kalmanfilter.h"
 #include "utils.h"
@@ -43,10 +38,41 @@ void KalmanFilter::handleLidarMeasurement(LidarMeasurement meas, const BeaconMap
         // ----------------------------------------------------------------------- //
         // ENTER YOUR CODE HERE
 
+
         BeaconData map_beacon = map.getBeaconWithId(meas.id); // Match Beacon with built in Data Association Id
         if (meas.id != -1 && map_beacon.id != -1)
         {           
             // The map matched beacon positions can be accessed using: map_beacon.x AND map_beacon.y
+
+            Vector2d z = Vector2d::Zero();
+            z << meas.range, meas.theta;
+
+            Vector2d zhat = Vector2d::Zero();
+            const double xdiff = map_beacon.x - state[0];
+            const double ydiff = map_beacon.y - state[1];
+            const double radius = std::sqrt(xdiff*xdiff + ydiff*ydiff);
+            const double angle = std::atan2(ydiff, xdiff) - state[2];
+            zhat << radius, angle;
+
+            Vector2d innovation = z - zhat;
+            innovation[1] = wrapAngle(innovation[1]);
+
+            Matrix2d R = Matrix2d::Zero();
+            R(0, 0) = LIDAR_RANGE_STD * LIDAR_RANGE_STD;
+            R(1, 1) = LIDAR_THETA_STD * LIDAR_THETA_STD;
+
+            MatrixXd H = MatrixXd::Zero(2, 4);
+            H(0, 0) = -1.0 / radius * xdiff;
+            H(0, 1) = -1.0 / radius * ydiff;
+            H(1, 0) = 1.0 / (radius * radius) * ydiff;
+            H(1, 1) = -1.0 / (radius * radius) * xdiff;
+            H(1, 2) = -1.0;
+
+            MatrixXd S = H * cov * H.transpose() + R;
+            MatrixXd kalmanGain = cov * H.transpose() * S.inverse();
+
+            state = state + kalmanGain * innovation;
+            cov = (Matrix4d::Identity() - kalmanGain * H) * cov;
         }
 
         // ----------------------------------------------------------------------- //
@@ -70,11 +96,28 @@ void KalmanFilter::predictionStep(GyroMeasurement gyro, double dt)
         // HINT: You can use the constants: ACCEL_STD, GYRO_STD
         // HINT: use the wrapAngle() function on angular values to always keep angle
         // values within correct range, otherwise strange angle effects might be seen.
-        // ----------------------------------------------------------------------- //
-        // ENTER YOUR CODE HERE
 
-        // ----------------------------------------------------------------------- //
+        state[0] = state[0] + dt * state[3] * std::cos(state[2]);
+        state[1] = state[1] + dt * state[3] * std::sin(state[2]);
+        state[2] = wrapAngle(state[2] + dt * gyro.psi_dot);
+        state[3] = state[3];
 
+        Matrix4d jacobian = Matrix4d::Zero();
+        jacobian(0, 0) = 1.0;
+        jacobian(0, 2) = -dt * state[3] * std::sin(state[2]);
+        jacobian(0, 3) = dt * std::cos(state[2]);
+        jacobian(1, 1) = 1.0;
+        jacobian(1, 2) = dt * state[3] * std::cos(state[2]);
+        jacobian(1, 3) = dt * std::sin(state[2]);
+        jacobian(2, 2) = 1.0;
+        jacobian(3, 3) = 1.0;
+
+        Matrix4d Q = Matrix4d::Zero();
+        Q(2, 2) = dt * dt * GYRO_STD * GYRO_STD;
+        Q(3, 3) = dt * dt * ACCEL_STD * ACCEL_STD;
+        
+        cov = jacobian * cov * jacobian.transpose() + Q;
+        
         setState(state);
         setCovariance(cov);
     } 
