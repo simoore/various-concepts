@@ -51,6 +51,18 @@ class KalmanFilter : public KalmanFilterBase
         void handleLidarMeasurement(LidarMeasurement meas, const BeaconMap& map);
         void handleGPSMeasurement(GPSMeasurement meas);
 
+    private:
+
+        double m_init_position_x;
+        double m_init_position_y;
+        double m_init_heading;
+        double m_init_velocity;
+        double m_init_bias;
+        bool m_init_position_valid;
+        bool m_init_heading_valid;
+        bool m_init_velocity_valid;
+        bool m_init_bias_valid;
+
 };
 
 #endif  // INCLUDE_AKFSFSIM_KALMANFILTER_H
