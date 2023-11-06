@@ -7,6 +7,22 @@
 #include <Eigen/SVD>
 #include <Eigen/Core>
 
+std::vector<Vector2> offsetPoints(const std::vector<Vector2>& points, const Vector2& offset)
+{
+    std::vector<Vector2> transformedPoints;
+    for (const Vector2& point : points){transformedPoints.push_back(Vector2(point.x + offset.x,point.y + offset.y));}
+    return transformedPoints;
+}
+
+std::vector<std::vector<Vector2>> offsetPoints(const std::vector<std::vector<Vector2>>& dataset, const Vector2& offset)
+{
+    std::vector<std::vector<Vector2>> transformedDataset;
+    for (const std::vector<Vector2> &points : dataset){
+        transformedDataset.push_back(offsetPoints(points, offset));
+    }
+    return transformedDataset;
+}
+
 double wrapAngle(double angle)
 {
 	angle = fmod(angle, (2.0*M_PI));
@@ -61,3 +77,5 @@ std::vector<Vector2> generateCircle(double x, double y, double radius, int num_p
     {circle.push_back(Vector2(x+radius*cos(theta(i)),y+radius*sin(theta(i))));}
     return circle;
 }
+
+

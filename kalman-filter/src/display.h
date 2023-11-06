@@ -8,6 +8,8 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
 
+#include "utils.h"
+
 template<typename ... Args>
 std::string string_format( const std::string& format, Args ... args )
 {
@@ -17,13 +19,6 @@ std::string string_format( const std::string& format, Args ... args )
     snprintf( buf.get(), size, format.c_str(), args ... );
     return std::string( buf.get(), buf.get() + size - 1 ); // We don't want the '\0' inside
 }
-
-struct Vector2
-{
-    double x,y;
-    Vector2():x(0.0),y(0.0){};
-    Vector2(double _x, double _y):x(_x),y(_y){};
-};
 
 std::vector<Vector2> transformPoints(const std::vector<Vector2>& points, const Vector2& position, const double rotation);
 std::vector<std::vector<Vector2>> transformPoints(const std::vector<std::vector<Vector2>>& dataset, const Vector2& position, const double rotation);

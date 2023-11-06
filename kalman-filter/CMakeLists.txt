@@ -29,6 +29,10 @@ add_executable(Capstone ${CommonSources} src/capstone.cpp)
 target_compile_definitions(Capstone PRIVATE _USE_MATH_DEFINES)
 target_link_libraries(Capstone mingw32 SDL2main SDL2 SDL2_ttf Eigen3::Eigen)
 
+add_executable(TestLidar src/test_lidar.cpp src/utils.cpp)
+target_compile_definitions(TestLidar PRIVATE _USE_MATH_DEFINES)
+target_link_libraries(TestLidar Eigen3::Eigen)
+
 # Copies the font file into the build directory
 add_custom_command(TARGET KalmanFilterLinear PRE_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
