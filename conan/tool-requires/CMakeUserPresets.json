@@ -1,0 +1,9 @@
+{
+    "version": 4,
+    "vendor": {
+        "conan": {}
+    },
+    "include": [
+        "D:\\doc\\dev\\miner\\cmake-projects\\tool-requires\\build\\CMakePresets.json"
+    ]
+}
