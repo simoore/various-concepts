@@ -15,6 +15,7 @@ class Client:
     TODO: Handling a crashed consumer
     TODO: Handling a crashed producer
     TODO: policy for recv or message loop task exiting
+    TODO: Reconnecting to server if it disconnects
     """
 
 
@@ -33,8 +34,9 @@ class Client:
             True, if the client networking calls run in a background thread or in an event loop that will block 
             this thread when it starts running.
         """
-        self.__msgs = []                    # Stores a list of parsed messages
-        self.__msg_queue = asyncio.Queue()  # Passes message between recv loop and message loop
+        self.__msgs = []                        # Stores a list of parsed messages
+        self.__msg_queue = asyncio.Queue()      # Passes message between recv loop and message loop
+        self.__started_event = asyncio.Event()  # Flags that a connection is made recv/message loop is running
 
         if use_background_thread:
             self.__loop = asyncio.new_event_loop()
@@ -76,7 +78,6 @@ class Client:
         logger.info("Opening connection")
         self.reader, self.writer = await asyncio.open_connection(host, port)
         logger.info("Connection established")
-        self.background_task = asyncio.create_task(self.__background_tasks())
 
 
     async def __recv_loop(self):
@@ -86,44 +87,27 @@ class Client:
         logger.info("Starting receive loop")
         while True:
             logger.info("Waiting for data")
-            try:
-                recvbytes = await self.reader.read(100)
-                raise RuntimeError("Simulated error")
-                if recvbytes == b"":
-                    break
-            except asyncio.CancelledError:
-                logger.info("Recv loop cancelled")
+            recvbytes = await self.reader.read(100)
+            #raise RuntimeError("Simulated error")
+            if recvbytes == b"":
+                # TODO: This should be an exception so the client acts accordingly
+                logger.info("Server has closed connection recv loop")
                 break
             await self.__msg_queue.put(recvbytes)
-        logger.info("Finishing recv loop")
+        
 
 
     async def __message_loop(self):
         """
-        This loop processes messages from the recv loop
+        This loop processes messages from the recv loop. Only exceptions can end this loop.
+        All exceptions including asyncio.CancelledError are handled by the caller.
         """
         while True:
-            try:
-                recvbytes: bytes = await self.__msg_queue.get()
-            except asyncio.CancelledError:
-                logger.info("Cancelled message loop")
-                break
+            recvbytes: bytes = await self.__msg_queue.get()
             message = recvbytes.decode()
             self.__msgs.append(message)
             logger.info("Received data '%s'", message)
 
-
-    async def __background_tasks(self):
-        """
-        What we want todo with our background tasks is to handle exceptions raised by them. When an exception is
-        thrown by one of the tasks, the task ground will stop the other tasks in the group before the exception
-        is passed up to the caller.
-        """
-        async with asyncio.TaskGroup() as tg:
-            tg.create_task(self.__message_loop())
-            tg.create_task(self.__recv_loop())
-        logger.info("Terminating background tasks")
-        
 
     async def __disconnect(self) -> None:
         """
@@ -132,22 +116,12 @@ class Client:
         the caller of this function.
         """
         logger.info("Disconnecting from the server")
-        self.background_task.cancel()
-        try:
-            await self.background_task
-        except asyncio.CancelledError:
-            logger.info("Background task cancelled")
         self.writer.close()
         await self.writer.wait_closed()
         logger.info("We have disconnected from the server")
 
 
-    ###########################################################################
-    # PUBLIC FUNCTIONS
-    ###########################################################################
-
-
-    async def start_client(self, retries: int = 0, timeout_s: float | None = None) -> None:
+    async def __start(self, retries: int = 0, timeout_s: float | None = None) -> None:
         """
         Attempts to create a connection with a remote host. It will retry a number of times before raising an
         exception.
@@ -171,16 +145,30 @@ class Client:
                 if retry_count > retries:
                     raise e
                 await asyncio.sleep(1.0)
-        
 
-    async def stop_client(self) -> None:
+
+    async def __run(self, retries, timeout_s: float | None):
         """
-        Stops the client by ending background tasks and disconnecting from the server. If the background tasks
-        raised an exception during execution, this raises the same exception.
+        What we want todo with our background tasks is to handle exceptions raised by them. When an exception is
+        thrown by one of the tasks, the task ground will stop the other tasks in the group before the exception
+        is passed up to the caller.
         """
+        await self.__start(retries=retries, timeout_s=timeout_s)
+        self.__started_event.set()
+        try:
+            async with asyncio.TaskGroup() as tg:
+                tg.create_task(self.__message_loop())
+                tg.create_task(self.__recv_loop())
+        except asyncio.CancelledError:
+            logger.info("Recv/message loop have been cancelled")
         await self.__disconnect()
 
 
+    ###########################################################################
+    # PUBLIC FUNCTIONS
+    ###########################################################################
+        
+    
     async def send(self, msg: str):
         """
         Send a message to the server.
@@ -208,10 +196,6 @@ class Client:
         local_msgs = self.__msgs
         self.__msgs = []
         return local_msgs
-    
-
-    def is_background_task_running(self) -> bool:
-        fut = self.__loop.call_soon_threadsafe(self.background_task.done)
 
 
     def await_from_non_asyncio(self, coro):
@@ -225,6 +209,27 @@ class Client:
         """
         fut = asyncio.run_coroutine_threadsafe(coro, self.__loop)
         return fut.result()
+    
+        
+    async def start_client(self, retries: int = 1, timeout_s: float | None = None):
+        """
+        Starts the client task. This attempts to establish a connection with the server so messages can be sent/recv.
+        Await the function self.started() to see if the connection was successfully established.
+        """
+        self.__started_event.clear()
+        self.client_task = asyncio.create_task(self.__run(retries=retries, timeout_s=timeout_s))
+        await self.__started_event.wait()
+
+
+    async def stop_client(self):
+        """
+        Stops the client by ending background tasks and disconnecting from the server. If the background tasks
+        raised an exception during execution, this raises the same exception.
+        """
+        logger.info("Stopping client")
+        self.client_task.cancel()
+        await self.client_task
+        logger.info("Client has been stopped")
 
 
 ###############################################################################
@@ -261,13 +266,14 @@ def app_main():
     time.sleep(5.0)
     logger.info("Slept for 5 seconds, closing loop")
     client.await_from_non_asyncio(client.stop_client())
+    
     msgs = client.await_from_non_asyncio(client.get_messages())
     logger.info("The number of messages received is %d", len(msgs))
 
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
-    use_backgroud_thread = True
+    use_backgroud_thread = False
     if use_backgroud_thread:
         app_main()
     else:
