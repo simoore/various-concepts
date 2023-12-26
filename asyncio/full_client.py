@@ -24,7 +24,7 @@ class Client:
 
         When it comes to threads - we will try to terminate them gracefully. If they don't terminate after a timeout
         we will terminate them ungracefully. If the main thread exits - we want all threads to terminate so the 
-        process doesn't hang. So always use daemon threads, but don't rely on just exiting the main thread to 
+        process doesn't hang. So always use daemon threads, but don't only rely on just exiting the main thread to 
         terminate them.
 
         Parameters
@@ -76,8 +76,7 @@ class Client:
         logger.info("Opening connection")
         self.reader, self.writer = await asyncio.open_connection(host, port)
         logger.info("Connection established")
-        self.message_task = asyncio.create_task(self.__message_loop())
-        self.recv_loop_task = asyncio.create_task(self.__recv_loop())
+        self.background_task = asyncio.create_task(self.__background_tasks())
 
 
     async def __recv_loop(self):
@@ -89,6 +88,7 @@ class Client:
             logger.info("Waiting for data")
             try:
                 recvbytes = await self.reader.read(100)
+                raise RuntimeError("Simulated error")
                 if recvbytes == b"":
                     break
             except asyncio.CancelledError:
@@ -113,15 +113,30 @@ class Client:
             logger.info("Received data '%s'", message)
 
 
-    async def __disconnect(self):
+    async def __background_tasks(self):
         """
-        This coroutine closes the connection to the server.
+        What we want todo with our background tasks is to handle exceptions raised by them. When an exception is
+        thrown by one of the tasks, the task ground will stop the other tasks in the group before the exception
+        is passed up to the caller.
+        """
+        async with asyncio.TaskGroup() as tg:
+            tg.create_task(self.__message_loop())
+            tg.create_task(self.__recv_loop())
+        logger.info("Terminating background tasks")
+        
+
+    async def __disconnect(self) -> None:
+        """
+        This coroutine closes the connection to the server. It cancels the background tasks and awaits them to finish.
+        If the background tasks have raised an exception during execution, this function passes the exception onto 
+        the caller of this function.
         """
         logger.info("Disconnecting from the server")
-        self.recv_loop_task.cancel()
-        self.message_task.cancel()
-        await self.recv_loop_task
-        await self.message_task
+        self.background_task.cancel()
+        try:
+            await self.background_task
+        except asyncio.CancelledError:
+            logger.info("Background task cancelled")
         self.writer.close()
         await self.writer.wait_closed()
         logger.info("We have disconnected from the server")
@@ -151,7 +166,7 @@ class Client:
                     await self.__connect(host="127.0.0.1", port=43215)
                 return
             except (ConnectionRefusedError, TimeoutError) as e:
-                logger.error("Connection error, retry to connect")
+                logger.error("Start client error")
                 retry_count += 1
                 if retry_count > retries:
                     raise e
@@ -160,6 +175,8 @@ class Client:
 
     async def stop_client(self) -> None:
         """
+        Stops the client by ending background tasks and disconnecting from the server. If the background tasks
+        raised an exception during execution, this raises the same exception.
         """
         await self.__disconnect()
 
@@ -181,8 +198,8 @@ class Client:
 
     async def get_messages(self):
         """
-        Or we could have a callback/task that the application can supply to handle these. The internal list storing messages
-        is cleared after this is sent.
+        Or we could have a callback/task that the application can supply to handle these. The internal list storing 
+        messages is cleared after this is sent.
 
         Returns
         -------
@@ -191,6 +208,10 @@ class Client:
         local_msgs = self.__msgs
         self.__msgs = []
         return local_msgs
+    
+
+    def is_background_task_running(self) -> bool:
+        fut = self.__loop.call_soon_threadsafe(self.background_task.done)
 
 
     def await_from_non_asyncio(self, coro):
@@ -213,6 +234,11 @@ class Client:
 
 async def app_async_main():
     """
+    There are a few options to deal with the background tasks:
+    * We could poll it to check if it is still running
+    * We could launch two tasks, one that executes are nominal logic and one that awaits the background task
+        and our main application would await both.
+    * Not worry about it and only check it when we disconnect.
     """
     client = Client(False)
     await client.start_client(retries=1)
@@ -220,6 +246,7 @@ async def app_async_main():
     await asyncio.sleep(2.0)
     await client.send("Hello from async")
     await asyncio.sleep(5.0)
+    logger.info("Slept for 5 seconds, closing loop")
     await client.stop_client()
 
 
@@ -228,6 +255,7 @@ def app_main():
     """
     client = Client(True)
     client.await_from_non_asyncio(client.start_client(retries=1))
+    logger.info("Client started. Doing work for 2 seconds")
     time.sleep(2.0)
     client.await_from_non_asyncio(client.send("Hello from non-async"))
     time.sleep(5.0)
