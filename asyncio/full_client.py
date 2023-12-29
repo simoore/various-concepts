@@ -19,6 +19,7 @@ class Client:
     This client is going to listen to a flaky server that is sending it messages. We are going to write a robust
     client that performs the network IO in a background thread.
 
+    All of these if how to deal with exceptions and error handling
     TODO: Handling a crashed consumer
     TODO: Handling a crashed producer
     TODO: policy for recv or message loop task exiting
@@ -43,7 +44,6 @@ class Client:
         """
         self.__msgs = []                        # Stores a list of parsed messages
         self.__msg_queue = asyncio.Queue()      # Passes message between recv loop and message loop
-        self.__started_event = asyncio.Event()  # Flags that a connection is made recv/message loop is running
 
         if use_background_thread:
             self.__loop = asyncio.new_event_loop()
@@ -84,7 +84,7 @@ class Client:
         """
         logger.info("Opening connection")
         async with asyncio.timeout(timeout_s):
-            self.reader, self.writer = await asyncio.open_connection(host, port)
+            self.__reader, self.__writer = await asyncio.open_connection(host, port)
         logger.info("Connection established")
 
 
@@ -95,8 +95,7 @@ class Client:
         logger.info("Starting receive loop")
         while True:
             logger.info("Waiting for data")
-            recvbytes = await self.reader.read(100)
-            #raise RuntimeError("Simulated error")
+            recvbytes = await self.__reader.read(100)
             if recvbytes == b"":
                 logger.info("Server has closed connection recv loop")
                 raise ServerClosedConnection
@@ -116,6 +115,23 @@ class Client:
             logger.info("Received data '%s'", message)
 
 
+    async def __client_background_tasks(self):
+        """
+        What we want todo with our background tasks is to handle exceptions raised by them. When an exception is
+        thrown by one of the tasks, the task ground will stop the other tasks in the group before the exception
+        is passed up to the caller.
+        """
+        try:
+            async with asyncio.TaskGroup() as tg:
+                tg.create_task(self.__message_loop())
+                tg.create_task(self.__recv_loop())
+        except* asyncio.CancelledError:
+            logger.info("Recv/message loop have been cancelled")
+        except* ServerClosedConnection:
+            logger.info("The server closed the connection")
+        await self.__disconnect()
+
+
     async def __disconnect(self) -> None:
         """
         This coroutine closes the connection to the server. It cancels the background tasks and awaits them to finish.
@@ -123,15 +139,15 @@ class Client:
         the caller of this function.
         """
         logger.info("Disconnecting from the server")
-        self.writer.close()
-        await self.writer.wait_closed()
+        self.__writer.close()
+        await self.__writer.wait_closed()
         logger.info("We have disconnected from the server")
 
 
     async def __start(self, retries: int = 0, timeout_s: float | None = None) -> None:
         """
         Attempts to create a connection with a remote host. It will retry a number of times before raising an
-        exception.
+        exception. It waits one second between retries.
 
         Parameters
         ----------
@@ -154,29 +170,6 @@ class Client:
                 await asyncio.sleep(1.0)
 
 
-    async def __run(self, retries, timeout_s: float | None):
-        """
-        What we want todo with our background tasks is to handle exceptions raised by them. When an exception is
-        thrown by one of the tasks, the task ground will stop the other tasks in the group before the exception
-        is passed up to the caller.
-        """
-        await self.__start(retries=retries, timeout_s=timeout_s)
-        self.__started_event.set()
-        try:
-            async with asyncio.TaskGroup() as tg:
-                tg.create_task(self.__message_loop())
-                tg.create_task(self.__recv_loop())
-        except* asyncio.CancelledError:
-            self.__started_event.clear()
-            logger.info("Recv/message loop have been cancelled")
-        except* ServerClosedConnection:
-            self.__started_event.clear()
-            logger.info("The server closed the connection")
-        # TODO: is there are better way then this event to flag when the taskgroup is running.
-        self.__started_event.clear()
-        await self.__disconnect()
-
-
     ###########################################################################
     # PUBLIC FUNCTIONS
     ###########################################################################
@@ -192,8 +185,8 @@ class Client:
             The message to send to the server.
         """
         logger.info("Sending message: '%s'", msg)
-        self.writer.write(msg.encode())
-        await self.writer.drain()
+        self.__writer.write(msg.encode())
+        await self.__writer.drain()
         logger.info("Message sent")
 
 
@@ -229,8 +222,8 @@ class Client:
         Starts the client task. This attempts to establish a connection with the server so messages can be sent/recv.
         Await the function self.started() to see if the connection was successfully established.
         """
-        self.client_task = asyncio.create_task(self.__run(retries=retries, timeout_s=timeout_s))
-        await self.__started_event.wait()
+        await self.__start(retries=retries, timeout_s=timeout_s)
+        self.__client_task = asyncio.create_task(self.__client_background_tasks())
 
 
     async def stop_client(self):
@@ -239,9 +232,23 @@ class Client:
         raised an exception during execution, this raises the same exception.
         """
         logger.info("Stopping client")
-        self.client_task.cancel()
-        await self.client_task
+        self.__client_task.cancel()
+        await self.__client_task
         logger.info("Client has been stopped")
+
+
+    async def client_done(self) -> bool:
+        """
+        If you have started the client task successfully then the client task should never finish. This function
+        returns true if the client task has finished. If an exception was raised, this will re-throw the same 
+        exception. The client task consists of the recv and message loop that listens for and processes new messages.
+
+        Returns
+        -------
+        client_task_done
+            True if the client task has finished.
+        """
+        return self.__client_task.done()
 
 
 ###############################################################################
