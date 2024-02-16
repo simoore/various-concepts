@@ -1,23 +1,14 @@
 
-
-pub trait Statement {
-    /// The type returned in the event of a conversion error.
-    #[stable(feature = "try_from", since = "1.34.0")]
-    type Error;
-
-    /// Performs the conversion.
-    #[stable(feature = "try_from", since = "1.34.0")]
-    #[rustc_diagnostic_item = "try_from_fn"]
-    fn try_from(value: T) -> Result<Self, Self::Error>;
+trait Expression {
+    fn execute(&self) -> i32;
 }
 
-trait expression {
-    fn evaluate(&self) -> i32;
+trait Statement {
+    fn execute(&self, energy: i32, daily_rest: i32) -> Action;
 }
 
-pub trait Expression {
 
-}
+
 
 #ifndef _PROGRAM_H_
 #define _PROGRAM_H_
@@ -97,74 +88,20 @@ typedef struct {
     GHashTable *variables;
 } Program;
 
-Program *
-program_new (Statement *statement, GHashTable *vars);
 
-void 
-program_free (Program *program);
+struct Program {
+    statement: &Statement,
+}
 
-void 
-program_free_statement_void (gpointer data);
+struct Block {
 
-Statement *
-program_new_statement (StatementType type, void *op);
+}
 
-void 
-program_free_statement (Statement *statement);
-
-Statement *
-program_new_block (GList *list);
-
-void 
-program_free_block (Block *block);
-
-Statement *
-program_new_if_then (Condition *condition, Statement *true_, Statement *false_);
-    
-void 
-program_free_if_then (IfThen *if_then);
-
-Statement *
-program_new_assign (Identifier *variable, Expression *expression);
-
-void 
-program_free_assign (Assign *assign);
-
-Statement *
-program_new_action_with_direction (ActionType type, Direction direction);
-
-Statement *
-program_new_action_with_time (int time);
-
-void 
-program_free_action (Action *action);
-
-Expression *
-program_new_expression (ExpressionType type, void *op);
-
-void 
-program_free_expression (Expression *expression);
-
-void 
-program_free_expression_void (gpointer data);
-
-Expression *
-program_new_arithmetic (Operator op, Identifier *ident_a, Identifier *ident_b);
-
-void 
-program_free_arithmetic (Arithmetic *arithmetic);
-
-Condition *
-program_new_condition (Operator oper, Identifier *ident_a, Identifier *ident_b);
-
-void 
-program_free_condition (Condition *condition);
-
-Identifier *
-program_new_identifier (IdentifierType type, int value);
-
-void 
-program_free_identifier (Identifier *identifier);
+impl Statement for Program {
+    fn execute(&self, energy: i32, daily_rest: i32) -> i32 {
+        return self.execute(energy, daily_rest);
+    }
+}
 
 Action *
 program_execute (Program *program, int energy_, int daily_rest_);

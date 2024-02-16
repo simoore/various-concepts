@@ -1,5 +1,6 @@
 use std::str::FromStr;
 
+#[derive(Debug)]
 pub enum Method {
     Get,
     Delete,
@@ -17,15 +18,15 @@ impl FromStr for Method {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "Get" => Ok(Self::Get),
-            "Delete" => Ok(Self::Delete),
-            "Post" => Ok(Self::Post),
-            "Put" => Ok(Self::Put),
-            "Head" => Ok(Self::Head),
-            "Connect" => Ok(Self::Connect),
-            "Options" => Ok(Self::Options),
-            "Trace" => Ok(Self::Trace),
-            "Patch" => Ok(Self::Patch),
+            "GET" => Ok(Self::Get),
+            "DELETE" => Ok(Self::Delete),
+            "POST" => Ok(Self::Post),
+            "PUT" => Ok(Self::Put),
+            "HEAD" => Ok(Self::Head),
+            "CONNECT" => Ok(Self::Connect),
+            "OPTIONS" => Ok(Self::Options),
+            "TRACE" => Ok(Self::Trace),
+            "PATCH" => Ok(Self::Patch),
             _ => Err(MethodError),
         }
     }
