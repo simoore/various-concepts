@@ -15,17 +15,13 @@ class MethodA:
     x = [roll, pitch, yaw, gyro_bias_x, gyro_bias_y, gyro_bias_z]
 
     The input of the filter is,
-    u = [gyro_x, gyro_y, gyro_z]
+    u = [roll_rate, pitch_rate, yaw_rate]
 
     The output of the filter is,
     y = [roll, pitch]
 
-    Angles are in radians.
-
-    Notes
-    -----
-    * I think I can remove the yaw state from the equations.
-    * If we consider dt to be constant, then we can compute the kalman gains offline.
+    Angles are in radians. We rotate the gyroscope measurements to attain the roll/pitch/yaw rate inputs, and we 
+    transform the accelerometer to roll & pitch for the update step.
     """
 
     def __init__(self, accel_std: float, gyro_std: float, init_angle_std: float, init_bias_std: float) -> None:
@@ -50,6 +46,9 @@ class MethodA:
         self._n_outputs = 2
         self._n_inputs = 3
 
+        self._gyro_std = gyro_std
+        self._accel_std = accel_std
+
         self._state = np.zeros((self._n_state, 1))
         self._cov = np.zeros((self._n_state, self._n_state))
         self._cov[0, 0] = init_angle_std * init_angle_std
@@ -59,10 +58,7 @@ class MethodA:
         self._cov[4, 4] = init_bias_std * init_bias_std
         self._cov[5, 5] = init_bias_std * init_bias_std
 
-        self._gyro_std = gyro_std
-        self._accel_std = accel_std
-
-
+        
     def state(self) -> np.ndarray:
         """
         Getter for the estimated state.
@@ -144,6 +140,11 @@ class MethodA:
         ----------
         dt
             The timestep since the last update in seconds.
+
+        Returns
+        -------
+        matQ
+            The model uncertainty covariance Q
         """
         matQ = np.zeros((self._n_state, self._n_state))
         matQ[0, 0] = dt * dt * self._gyro_std * self._gyro_std
@@ -165,11 +166,43 @@ class MethodA:
         -------
         matR
             The measurement uncertainty matrix R.
+
+        Returns
+        -------
+        matR
+            The measurement uncertainty covariance R
         """
         matR = np.zeros((self._n_outputs, self._n_outputs))
         matR[0, 0] = self._accel_std * self._accel_std
         matR[1, 1] = self._accel_std * self._accel_std
         return matR
+    
+
+    @staticmethod
+    def rotation_matrix(r: float, p: float, inv: bool) -> np.ndarray:
+        """
+        Parameters
+        ----------
+        r
+            The roll angle.
+        p
+            The pitch angle.
+        inv
+            If true the inverse rotation matrix is returned.
+
+        Returns
+        -------
+        rot
+            The rotation between the gyroscope measurement and the roll/pitch/yaw rates.
+        """
+        rot = np.array([
+            [np.cos(p), 0.0, -np.cos(r)*np.sin(p)],
+            [0.0, 1.0, np.sin(p)],
+            [np.sin(p), 0.0, -np.cos(r)*np.cos(p)]])
+        if inv:
+            return np.linalg.inv(rot)
+        else:
+            return rot
     
 
     def prediction(self, dt: float, gx: float, gy: float, gz: float) -> None:
@@ -190,9 +223,10 @@ class MethodA:
         matA = self.state_matrix(dt)
         matB = self.input_matrix(dt)
         matQ = self.model_uncertainty()
-        u = np.ndarray([[gx, gy, gz]])
+        rotinv = self.rotation_matrix(self._state[0], self._state[1], True)
+        u = rotinv @ np.ndarray([[gx, gy, gz]]).T
         self._state = matA @ self._state + matB @ u
-        self.cov = matA @ self.cov @ matA.T + matQ
+        self._cov = matA @ self.cov @ matA.T + matQ
 
 
     def update(self, ax, ay, az) -> None:

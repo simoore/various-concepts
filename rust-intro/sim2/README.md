@@ -11,3 +11,4 @@ cargo test
 cargo test -- --nocapture
 ```
 
+For gtk programming in rust see: [GUI development with Rust and GTK 4](https://gtk-rs.org/gtk4-rs/stable/latest/book/introduction.html)

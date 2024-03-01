@@ -1,112 +1,165 @@
+use std::collections::HashMap;
 
-trait Expression {
-    fn execute(&self) -> i32;
+/*****************************************************************************/
+/********** TYPES ************************************************************/
+/*****************************************************************************/
+
+/// Defines the operator used in condition expressions.
+enum ConditionOp { Lt, Gt, Eq }
+
+/// Defines the operator used in arithmetic expressions.
+enum ArithmeticOp { Add, Sub }
+
+/// The direction an action is performed in.
+enum Direction { N, NE, E, SE, S, SW, W, NW }
+
+/// The action that the creature performs after the sim2 program runs.
+enum Action { Move(Direction), Hunt(Direction), Breed(Direction), Rest(i32) }
+
+/// The Identifier enum list special identifiers that generate values in different ways compared to normal variables.
+enum Identifier { Rand, Energy, DailyRest }
+
+/// A constant value.
+struct Constant { value: i32 }
+
+/// A variable that can change value during execution of the sim2 program.
+struct Variable { key: String }
+
+/// Represents an expression where two identifiers are combined.
+struct Arithmetic {
+    a: Box<dyn Expression>,
+    b: Box<dyn Expression>,
+    op: ArithmeticOp,
 }
 
-trait Statement {
-    fn execute(&self, energy: i32, daily_rest: i32) -> Action;
+/// Condiditions represent a boolean expression. sim2 defines true as 1 and false as 0 as expression must evaluate
+/// to an integer value.
+struct Condition {
+    a: Box<dyn Expression>,
+    b: Box<dyn Expression>,
+    op: ConditionOp,
 }
 
+struct Assign {
+    var: Variable,
+    expression: Box<dyn Expression>,
+}
 
-
-
-#ifndef _PROGRAM_H_
-#define _PROGRAM_H_
-
-#include <glib.h>
-
-typedef enum {IDENT, COND, ARITH} ExpressionType; 
-typedef enum {BLOCK, IF_THEN, ASSIGN, ACTION} StatementType;
-typedef enum {MOVE, HUNT, BREED, REST, NONE} ActionType;
-typedef enum {ADD, SUB, LT, GT, EQ} Operator;
-typedef enum {VAR, INT, RAND, ENERGY, DAILY_REST} IdentifierType;
-typedef enum {N, NE, E, SE, S, SW, W, NW, STILL} Direction;
-
-typedef struct Statement_ Statement;
-
-typedef struct {
-    IdentifierType type;
-    int value;
-} Identifier;
-
-typedef struct {
-    Identifier *identifier_left;
-    Identifier *identifier_right;
-    Operator op;
-} Arithmetic;
-
-typedef struct {
-    Identifier *identifier_left;
-    Identifier *identifier_right;
-    Operator op;
-} Condition;
-
-typedef struct {
-    ExpressionType type;
-    union {
-        Condition *condition;
-        Identifier *identifier;
-        Arithmetic *arithmetic;
-    } op;
-} Expression;
-
-typedef struct {
-    ActionType action;
-    union {
-        int time;
-        Direction direction;
-    } op;
-} Action;
-
-typedef struct {
-    Identifier *var;
-    Expression *expression;
-} Assign;
-
-typedef struct {
-    Condition *condition;
-    Statement *statement_true;
-    Statement *statement_false;
-} IfThen;
-
-typedef struct {
-    GList *statements;
-} Block;
-
-struct Statement_ {
-    StatementType type;
-    union { 
-        Block *block;
-        IfThen *if_then;
-        Assign *assign;
-        Action *action;
-    } op;
-};
-
-typedef struct {
-    Statement *statement;
-    GHashTable *variables;
-} Program;
-
-
-struct Program {
-    statement: &Statement,
+struct IfThen {
+    condition: Condition,
+    statement_true: Box<dyn Statement>,
+    statement_false: Box<dyn Statement>,
 }
 
 struct Block {
-
+    statements: Vec<Box<dyn Statement>>,
 }
 
-impl Statement for Program {
-    fn execute(&self, energy: i32, daily_rest: i32) -> i32 {
-        return self.execute(energy, daily_rest);
+struct Program {
+    statement: Box<dyn Statement>,
+    vars: HashMap<String, i32>
+}
+
+/// When the program is evaluated, we can take into account the state of the creature when making decisions about
+/// its behaviour. There are two states that can be considered. Its energy and and how much it has rested during
+/// the day.
+struct CreatureStats {
+    energy: i32,
+    daily_rest: i32,
+}
+
+/*****************************************************************************/
+/********** TRAITS ***********************************************************/
+/*****************************************************************************/
+
+/// Expressions return an integer value when executed.
+trait Expression {
+    fn execute(&self, cs: &CreatureStats, vars: &HashMap<String, i32>) -> i32;
+}
+
+/// Statements must evaluate to some Action type as the purpose of a sim2 program is to determine an action 
+/// that the predator/prey actor must do.
+trait Statement {
+    fn execute(&self, cs: &CreatureStats, vars: &mut HashMap<String, i32>) -> Option<Action>;
+}
+
+/*****************************************************************************/
+/********** FUNCTIONS ********************************************************/
+/*****************************************************************************/
+
+impl Expression for Identifier {
+    fn execute(&self, cs: &CreatureStats, _vars: &HashMap<String, i32>) -> i32 {
+        match self {
+            Identifier::Energy => cs.energy,
+            Identifier::DailyRest => cs.daily_rest,
+            Identifier::Rand => 1, // TODO: generate random number
+        }
     }
 }
 
-Action *
-program_execute (Program *program, int energy_, int daily_rest_);
+impl Expression for Constant {
+    fn execute(&self, _cs: &CreatureStats, _vars: &HashMap<String, i32>) -> i32 {
+        self.value
+    }
+}
 
-void 
-program_print (Program *program);
+impl Expression for Variable {
+    fn execute(&self, _cs: &CreatureStats, vars: &HashMap<String, i32>) -> i32 {
+        *vars.get(&self.key).unwrap()
+    }
+}
 
-#endif /* _PROGRAM_H_ */
+impl Expression for Arithmetic {
+    fn execute(&self, cs: &CreatureStats, vars: &HashMap<String, i32>) -> i32 {
+        match self.op {
+            ArithmeticOp::Add => self.a.execute(cs, vars) + self.b.execute(cs, vars),
+            ArithmeticOp::Sub => self.a.execute(cs, vars) - self.b.execute(cs, vars),
+        }
+    } 
+}
+
+impl Expression for Condition {
+    fn execute(&self, cs: &CreatureStats, vars: &HashMap<String, i32>) -> i32 {
+        let istrue = match self.op {
+            ConditionOp::Lt => self.a.execute(cs, vars) < self.b.execute(cs, vars),
+            ConditionOp::Gt => self.a.execute(cs, vars) > self.b.execute(cs, vars),
+            ConditionOp::Eq => self.a.execute(cs, vars) == self.b.execute(cs, vars),
+        };
+        if istrue { 1 } else { 0 }
+    } 
+}
+
+impl Statement for Assign {
+    fn execute(&self, cs: &CreatureStats, vars: &mut HashMap<String, i32>) -> Option<Action> {
+        let value = self.expression.execute(&cs, &vars);
+        vars.insert(self.var.key.clone(), value);
+        None
+    }
+}
+
+impl Statement for IfThen {
+    fn execute(&self, cs: &CreatureStats, vars: &mut HashMap<String, i32>) -> Option<Action> {
+        if self.condition.execute(cs, &vars) == 1 {
+            self.statement_true.execute(cs, vars)
+        } else {
+            self.statement_false.execute(cs, vars)
+        }
+    }
+}
+
+impl Statement for Block {
+    fn execute(&self, cs: &CreatureStats, vars: &mut HashMap<String, i32>) -> Option<Action> {
+        let mut action: std::option::Option<Action> = None;
+        for statement in &self.statements {
+            action = statement.execute(&cs, vars);
+        }
+        action
+    }
+}
+
+impl Program {
+    fn execute(&mut self, energy: i32, daily_rest: i32) -> Action {
+        let cs = CreatureStats { energy, daily_rest };
+        self.statement.execute(&cs, &mut self.vars).unwrap()
+    }
+}
