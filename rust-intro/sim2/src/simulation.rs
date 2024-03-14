@@ -1,11 +1,17 @@
 use std::path::PathBuf;
 
+use crate::creature::Creature;
+use crate::grid::Grid;
+
 pub struct Simulation {
     prey_filename: Option<PathBuf>,
     pred_filename: Option<PathBuf>,
     run: bool,
     n_prey: i32,
     n_pred: i32,
+    creatures: Vec<Creature>,
+    valid_configuration: bool,
+    grid: Grid
 }
 
 impl Simulation {
@@ -17,6 +23,9 @@ impl Simulation {
             prey_filename: None,
             pred_filename: None,
             run: false,
+            valid_configuration: false,
+            creatures: Vec::new(),
+            grid: Grid::new(100, 100),
         }
     }
 
@@ -29,53 +38,38 @@ impl Simulation {
     }
 
     pub fn set_run(&mut self, val: bool) {
-        self.run = val;
+        self.run = val && self.valid_configuration;
     }
 
-    pub fn iteration(&self) -> bool {
-        match (&self.prey_filename, &self.pred_filename) {
-            (Some(x), Some(y)) => println!("play both"),
-            (Some(x), None) => println!("play x"),
-            (None, Some(y)) => println!("play y"),
-            _ => println!("play"),
+    pub fn iteration(&mut self) -> bool {
+        if self.run {
+            let mut new_creatures = self.creatures
+                .iter_mut()
+                .map(|c| c.act(&mut self.grid))
+                .flatten()
+                .collect::<Vec<Creature>>();
+            self.creatures.retain(|c| !c.is_dead());
+            self.creatures.append(&mut new_creatures);
         }
-        println!("Sim play");
         self.run
     }
 
-    pub fn config(&mut self) {
-        //let file = File::open(filename).expect("Couldn't open file");
+    pub fn check(&self) {
+
+    }
+
+    pub fn config(&mut self, n_pred: i32, n_prey: i32) {
+        // let prey_file = File::open(self.prey_filename).expect("Couldn't open file");
+        // let pred_file = File::open(self.pred_filename).expect("Couldn't open file");
 
         // let mut reader = BufReader::new(file);
         // let mut contents = String::new();
         // let _ = reader.read_to_string(&mut contents);
 
+        // let pre
+
         // text_view.buffer().set_text(&contents);
+
+        // if 
     }
-
-    // // This function performs one iteration of the simulation. This involves asking each creature their intention which 
-    // // is based on their states and then asking each creature to act.
-    // fn interation() {
-    //     GList *l = creatures;
-    //     GList *next;
-    //     Creature *c;
-    //     number = 0;
-    //     if (prey_program == NULL || pred_program == NULL)
-    //         return;
-    //     g_list_foreach (creatures, sim_act, NULL);
-
-    //     // purge dead creatures from simulation
-    //     while (l != NULL)
-    //     {
-    //         GList *next = l->next;
-    //         c = l->data;
-    //         if (c->energy <= 0)
-    //         {
-    //             g_free (c);
-    //             creatures = g_list_delete_link (creatures, l);
-    //             number--;
-    //         }
-    //         l = next;
-    //     }
-    // }
 }

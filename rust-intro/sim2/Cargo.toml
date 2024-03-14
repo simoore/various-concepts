@@ -7,3 +7,4 @@ edition = "2021"
 
 [dependencies]
 gtk4 = { version = "0.8.0", features = ["v4_12"] }
+rand = { version = "0.8" }

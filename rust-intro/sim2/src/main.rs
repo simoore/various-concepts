@@ -11,8 +11,12 @@ use gtk::gio;
 use crate::simulation::Simulation;
 
 // For top-level rust files, you need to explicity include the source files that are part of this module.
+mod code;
 mod compiler;
+mod creature;
+mod grid;
 mod lexer;
+mod location;
 mod program;
 mod simulation;
 
@@ -22,7 +26,7 @@ mod simulation;
 //
 // @param sim
 //      A reference to the simulation we are attempting to start.
-fn play(sim: Rc<RefCell<Simulation>>) -> None {
+fn play(sim: Rc<RefCell<Simulation>>) {
     sim.borrow_mut().set_run(true);
     let timer_sim = sim.clone();
     glib::timeout_add_local(Duration::from_millis(1000), move || {
@@ -34,7 +38,7 @@ fn play(sim: Rc<RefCell<Simulation>>) -> None {
 //
 // @param sim
 //      The reference to the simulation that we are pausing.
-fn pause(sim: Rc<RefCell<Simulation>>) -> None {
+fn pause(sim: Rc<RefCell<Simulation>>) {
     sim.borrow_mut().set_run(false);
 }
 
@@ -49,7 +53,7 @@ fn draw(area: &gtk::DrawingArea, cairo: &cairo::Context, width: i32, height: i32
 //      The simulation reference that is going to process the sim2 files.
 // @param prey
 //      If true, we are opening the sim2 file for prey, otherwise it is for predators.
-fn launch_file_dialog(sim: Rc<RefCell<Simulation>>, prey: bool) -> None {
+fn launch_file_dialog(sim: Rc<RefCell<Simulation>>, prey: bool) {
 
     let filedialog = gtk::FileDialog::builder()
         .title(if prey { "Open prey sim2 file" } else {"Open predator sim2 file"})
@@ -86,7 +90,7 @@ fn build_toolbar(sim: Rc<RefCell<Simulation>>) -> gtk::Box {
     let pause_sim = sim.clone();
     pause_button.connect_clicked(move |_| { pause(pause_sim.clone())  });
     let config_sim = sim.clone();
-    config_button.connect_clicked(move |_| { config_sim.borrow_mut().config() });
+    config_button.connect_clicked(move |_| { config_sim.borrow_mut().config(5, 5) });
 
     let grid = gtk::Grid::builder().row_spacing(5).column_spacing(5).build();
     let prey_label = gtk::Label::builder().label("Prey:").halign(gtk::Align::End).build();
@@ -129,7 +133,7 @@ fn build_toolbar(sim: Rc<RefCell<Simulation>>) -> gtk::Box {
 //      The predator/prey simulator that is modified by various events in the gtk application.
 // @param app
 //      Used to link the window to the application.
-fn build_ui(sim: Rc<RefCell<Simulation>>, app: &gtk::Application) -> None {
+fn build_ui(sim: Rc<RefCell<Simulation>>, app: &gtk::Application) {
     
     // Create the main components in the application window.
     let toolbar = build_toolbar(sim);

@@ -6,8 +6,8 @@ use std::fs;
 /********** TYPES ************************************************************/
 /*****************************************************************************/
 
-#[derive(Debug)]
-enum Token {
+#[derive(Clone, Debug)]
+pub enum Token {
     Id(String), 
     Int(i32), 
     Sim, 
@@ -30,7 +30,7 @@ enum Token {
     Rest, 
     Breed, 
     IdRest, 
-    IdEngergy, 
+    IdEnergy, 
     DirN, 
     DirNE, 
     DirE, 
@@ -59,7 +59,7 @@ enum CharType {
 }
 
 #[derive(Debug)]
-enum LexerError {
+pub enum LexerError {
     InvalidCharType,
     InvalidTransition,
     InvalidOperatorString,
@@ -109,23 +109,23 @@ impl fmt::Display for LexerError {
     }
 }
 
-/// Loads a new file into the lexer for analysis.
-///
-/// filename      
-///     The filename containing the program that is to be tokenized.
+// Loads a new file into the lexer for analysis.
+//
+// filename      
+//      The filename containing the program that is to be tokenized.
 pub fn load_file(filename: &str) -> Result<Vec<Token>, Box<dyn Error>> {
     let contents = fs::read_to_string(filename)?;
     let tokens = tokenize(&contents)?;
     Ok(tokens)
 }
 
-/// Converts the sim2 code into a vector of tokens.
-/// 
-/// contents
-///     The sim2 string.
-/// returns
-///     The vector of tokens if there are not parsing errors.
-fn tokenize(contents: &str) -> Result<Vec<Token>, LexerError> {
+// Converts the sim2 code into a vector of tokens.
+// 
+// contents
+//      The sim2 string.
+// returns
+//      The vector of tokens if there are not parsing errors.
+pub fn tokenize(contents: &str) -> Result<Vec<Token>, LexerError> {
     let mut head = 0;
     let mut tail = 0;
     let mut state = State::Initial;
@@ -253,7 +253,7 @@ fn process_identifier(identifier_str: &str) -> Token {
         "add" => Token::Add,
         "rand" => Token::Rand,
         "awakeDaily" => Token::IdRest,
-        "energy" => Token::IdEngergy,
+        "energy" => Token::IdEnergy,
         "N" => Token::DirN,
         "NE" => Token::DirNE,
         "E" => Token::DirE,
@@ -364,9 +364,9 @@ sim
 end
     ";
 
-static EXPECTED_TOKENS: [Token; 25]  = [Token::Sim, Token::If, Token::Lpar, Token::IdEngergy, Token::Gt, 
+static EXPECTED_TOKENS: [Token; 25]  = [Token::Sim, Token::If, Token::Lpar, Token::IdEnergy, Token::Gt, 
     Token::Int(0), Token::Rpar, Token::Then, Token::If, Token::Lpar, Token::IdRest, Token::Gt, Token::Int(16), 
-    Token::Rpar, Token::Then, Token::Rest, Token::Int(8), Token::Else, Token::If, Token::Lpar, Token::IdEngergy, 
+    Token::Rpar, Token::Then, Token::Rest, Token::Int(8), Token::Else, Token::If, Token::Lpar, Token::IdEnergy, 
     Token::Gt, Token::Int(100), Token::Rpar, Token::Then];
 
     #[test]
