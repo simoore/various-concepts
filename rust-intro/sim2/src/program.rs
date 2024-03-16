@@ -1,27 +1,28 @@
 use std::collections::HashMap;
 use std::fmt::{Debug, Display};
 
+use rand::Rng;
+
 /*****************************************************************************/
 /********** TRAITS ***********************************************************/
 /*****************************************************************************/
 
-// Expressions return an integer value when executed.
+/// Expressions return an integer value when executed.
 pub trait Expression: Debug + Display {
     fn execute(&self, cs: &CreatureStats, vars: &HashMap<String, i32>) -> i32;
 }
 
-// Statements must evaluate to some Action type as the purpose of a sim2 program is to determine an action 
-// that the predator/prey actor must do.
+/// Statements must evaluate to some Action type as the purpose of a sim2 program is to determine an action 
+/// that the predator/prey actor must do.
 pub trait Statement: Debug + Display {
     fn execute(&self, cs: &CreatureStats, vars: &mut HashMap<String, i32>) -> Action;
-    fn print(&self, indent: &str);
 }
 
 /*****************************************************************************/
 /********** TYPES ************************************************************/
 /*****************************************************************************/
 
-// Defines the operator used in condition expressions.
+/// Defines the operator used in condition expressions.
 #[derive(Debug)]
 pub enum ConditionOp { Lt, Gt, Eq }
 
@@ -35,7 +36,7 @@ impl Display for ConditionOp {
     }
 }
 
-// Defines the operator used in arithmetic expressions.
+/// Defines the operator used in arithmetic expressions.
 #[derive(Debug)]
 pub enum ArithmeticOp { Add, Sub }
 
@@ -48,27 +49,22 @@ impl Display for ArithmeticOp {
     }
 }
 
-// When the program is evaluated, we can take into account the state of the creature when making decisions about
-// its behaviour. There are two states that can be considered. Its energy and and how much it has rested during
-// the day.
+
+/// When the program is evaluated, we can take into account the state of the creature when making decisions about
+/// its behaviour. There are two states that can be considered. Its energy and and how much it has rested during
+/// the day.
 pub struct CreatureStats {
     energy: i32,
     daily_rest: i32,
-}
-
-impl CreatureStats {
-    pub fn new() -> CreatureStats {
-        CreatureStats { energy: 0, daily_rest: 0 }
-    }
 }
 
 /*****************************************************************************/
 /********** TYPE: Direction **************************************************/
 /*****************************************************************************/
 
-// The direction an action is performed in.
+/// The direction an action is performed in.
 #[derive(Clone, Debug, PartialEq)]
-pub enum Direction { N, NE, E, SE, S, SW, W, NW, Still }
+pub enum Direction { N, NE, E, SE, S, SW, W, NW }
 
 impl Display for Direction {
     fn fmt(&self, fmt: &mut std::fmt::Formatter) -> std::fmt::Result {
@@ -81,7 +77,6 @@ impl Display for Direction {
             Direction::SW => write!(fmt, "SW"),
             Direction::W => write!(fmt, "W"),
             Direction::NW => write!(fmt, "NW"),
-            Direction::Still => write!(fmt, "Still"),
         }
     }
 }
@@ -90,7 +85,7 @@ impl Display for Direction {
 /********** TYPE: Action *****************************************************/
 /*****************************************************************************/
 
-// The action that the creature performs after the sim2 program runs.
+/// The action that the creature performs after the sim2 program runs.
 #[derive(Clone, Debug, PartialEq)]
 pub enum Action { Move(Direction), Hunt(Direction), Breed(Direction), Rest(i32), None }
 
@@ -110,18 +105,13 @@ impl Statement for Action {
     fn execute(&self, _cs: &CreatureStats, _vars: &mut HashMap<String, i32>) -> Action {
         self.clone()
     }
-
-    fn print(&self, indent: &str) {
-        print!("{}", indent);
-        println!("action");
-    }
 }
 
 /*****************************************************************************/
 /********** TYPE: Special Identifier *****************************************/
 /*****************************************************************************/
 
-// The Identifier enum list special identifiers that generate values in different ways compared to normal variables.
+/// The Identifier enum list special identifiers that generate values in different ways compared to normal variables.
 #[derive(Debug)]
 pub enum SpecialIdentifier { Rand, Energy, DailyRest }
 
@@ -135,12 +125,16 @@ impl Display for SpecialIdentifier {
     }
 }
 
+
 impl Expression for SpecialIdentifier {
     fn execute(&self, cs: &CreatureStats, _vars: &HashMap<String, i32>) -> i32 {
         match self {
             SpecialIdentifier::Energy => cs.energy,
             SpecialIdentifier::DailyRest => cs.daily_rest,
-            SpecialIdentifier::Rand => 1, // TODO: generate random number
+            SpecialIdentifier::Rand => {
+                let mut rng = rand::thread_rng();
+                rng.gen_range(0..1000)
+            }
         }
     }
 }
@@ -150,7 +144,7 @@ impl Expression for SpecialIdentifier {
 /********** TYPE: Constant ***************************************************/
 /*****************************************************************************/
 
-// A constant value.
+/// A constant value.
 #[derive(Debug)]
 pub struct Constant { value: i32 }
 
@@ -176,7 +170,7 @@ impl Expression for Constant {
 /********** TYPE: Variable ***************************************************/
 /*****************************************************************************/
 
-// A variable that can change value during execution of the sim2 program.
+/// A variable that can change value during execution of the sim2 program.
 #[derive(Debug)]
 pub struct Variable { key: String }
 
@@ -263,6 +257,7 @@ impl Arithmetic {
 
 impl Display for Arithmetic {
     fn fmt(&self, fmt: &mut std::fmt::Formatter) -> std::fmt::Result {
+        // TODO: Fix this fmt function to display arithmic correctly.
         write!(fmt, "Action")
     }
 }
@@ -280,8 +275,8 @@ impl Expression for Arithmetic {
 /********** TYPE: Condition **************************************************/
 /*****************************************************************************/
 
-// Condiditions represent a boolean expression. sim2 defines true as 1 and false as 0 as expression must evaluate
-// to an integer value.
+/// Condiditions represent a boolean expression. sim2 defines true as 1 and false as 0 as expression must evaluate
+/// to an integer value.
 #[derive(Debug)]
 pub struct Condition {
     a: Identifier,
@@ -340,11 +335,6 @@ impl Statement for Assign {
         vars.insert(self.var.key.clone(), value);
         Action::None
     }
-
-    fn print(&self, indent: &str) {
-        print!("{}", indent);
-        println!("assign");
-    }
 }
 
 /*****************************************************************************/
@@ -389,12 +379,6 @@ impl Statement for IfThen {
             }
         }
     }
-
-        
-    fn print(&self, indent: &str) {
-        print!("{}", indent);
-        println!("ifthen");
-    }
 }
 
 /*****************************************************************************/
@@ -431,11 +415,6 @@ impl Statement for Block {
         }
         action
     }
-
-    fn print(&self, indent: &str) {
-        print!("{}", indent);
-        println!("block");
-    }
 }
 
 /*****************************************************************************/
@@ -445,22 +424,17 @@ impl Statement for Block {
 #[derive(Debug)]
 pub struct Program {
     statement: Box<dyn Statement>,
-    vars: HashMap<String, i32>
 }
 
 impl Program {
     pub fn new(statement: Box<dyn Statement>) -> Program {
-        Program{ statement, vars: HashMap::new() }
+        Program{ statement }
     }
 
-    pub fn execute(&mut self, energy: i32, daily_rest: i32) -> Action {
+    pub fn execute(&self, energy: i32, daily_rest: i32) -> Action {
         let cs = CreatureStats { energy, daily_rest };
-        self.statement.execute(&cs, &mut self.vars)
-    }
-
-    pub fn print(&self) {
-        println!("sim");
-        self.statement.print("  ");
-        println!("end");
+        // TODO: handle variable hash table properly in this module (it isn't being used at the moment).
+        let mut vars = HashMap::<String, i32>::new();
+        self.statement.execute(&cs, &mut vars)
     }
 }

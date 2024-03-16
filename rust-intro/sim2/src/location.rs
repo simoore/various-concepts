@@ -9,6 +9,15 @@ pub struct Location {
     prey_kill: i32,
 }
 
+#[derive(Debug)]
+pub enum LocationStatus {
+    PreyHere,
+    PredHere, 
+    PreyRestingHere, 
+    PredRestingHere,
+    NothingHere,
+}
+
 impl Location {
     pub fn new() -> Location {
         Location {
@@ -122,8 +131,27 @@ impl Location {
         self.remove_resting_predator();
     }
 
+
+    /// When a prey awakens it is removed from the resting count, and added back into the prey count.
+    /// 
+    /// @param energy
+    ///     If the creatures energy is above a threshold, it is also added to the breed count.
     pub fn awake_prey(&mut self, energy: i32) {
         self.add_prey(energy);
         self.remove_resting_prey();
     }
+
+
+    /// The location status is used to visualize the location on the UI.
+    ///
+    /// @return
+    ///     The location status, that is, if the location contains predators or prey.
+    pub fn status(&self) -> LocationStatus {
+        if self.pred_num > 0 { return LocationStatus::PredHere; }
+        if self.prey_num > 0 { return LocationStatus::PreyHere; }
+        if self.pred_resting > 0 { return LocationStatus::PredRestingHere; }
+        if self.prey_resting > 0 { return LocationStatus::PreyRestingHere; }
+        LocationStatus::NothingHere    
+    }
+    
 }

@@ -1,6 +1,4 @@
-use std::error::Error;
 use std::fmt;
-use std::fs;
 
 /*****************************************************************************/
 /********** TYPES ************************************************************/
@@ -77,6 +75,7 @@ impl From<std::num::ParseIntError> for LexerError {
     }
 }
 
+
 /// Implements equality for the Token enum.
 impl PartialEq for Token {
     fn eq(&self, other: &Self) -> bool {
@@ -92,8 +91,10 @@ impl PartialEq for Token {
     }
 }
 
+
 /// This is required to implement the std::error::Error trait for LexerError.
 impl std::error::Error for LexerError {}
+
 
 /// This allows LexerErrors to be used with a println! formatter.
 impl fmt::Display for LexerError {
@@ -109,22 +110,13 @@ impl fmt::Display for LexerError {
     }
 }
 
-// Loads a new file into the lexer for analysis.
-//
-// filename      
-//      The filename containing the program that is to be tokenized.
-pub fn load_file(filename: &str) -> Result<Vec<Token>, Box<dyn Error>> {
-    let contents = fs::read_to_string(filename)?;
-    let tokens = tokenize(&contents)?;
-    Ok(tokens)
-}
 
-// Converts the sim2 code into a vector of tokens.
-// 
-// contents
-//      The sim2 string.
-// returns
-//      The vector of tokens if there are not parsing errors.
+/// Converts the sim2 code into a vector of tokens.
+/// 
+/// contents
+///      The sim2 string.
+/// returns
+///      The vector of tokens if there are not parsing errors.
 pub fn tokenize(contents: &str) -> Result<Vec<Token>, LexerError> {
     let mut head = 0;
     let mut tail = 0;
@@ -251,6 +243,7 @@ fn process_identifier(identifier_str: &str) -> Token {
         "breed" => Token::Breed,
         "hunt" => Token::Hunt,
         "add" => Token::Add,
+        "sub" => Token::Sub,
         "rand" => Token::Rand,
         "awakeDaily" => Token::IdRest,
         "energy" => Token::IdEnergy,
@@ -291,78 +284,7 @@ fn process_operator(operator_str: &str) -> Result<Token, LexerError> {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    static CODE: &str = "\
-sim
-   if (energy > 0) then
-      if (awakeDaily > 16) then
-         rest 8
-      else 
-         if (energy > 100) then
-            if (rand < 125) then
-               breed N
-            else 
-               if (rand < 143) then
-		  breed NE
-	       else 
-                  if (rand < 167) then
-		     breed E
- 		  else
-		     if (rand < 200) then
-		        breed SE
-		     else
-			if (rand < 250) then
-			   breed S
-			else
-			   if (rand < 333) then
-               		      breed SW
-                           else 
-               		      if (rand < 500) then
-		  	         breed W
-	       		      else 
-		     		 breed NW
-			      end
- 		  	   end
-         	        end
-            	     end
-                  end
-               end
-            end
-         else
-            if (rand < 125) then
-               hunt N
-            else 
-               if (rand < 143) then
-		  hunt NE
-	       else 
-                  if (rand < 167) then
-		     hunt E
- 		  else
-		     if (rand < 200) then
-		        hunt SE
-		     else
-			if (rand < 250) then
-			   hunt S
-			else
-			   if (rand < 333) then
-               		      hunt SW
-                           else 
-               		      if (rand < 500) then
-		  	         hunt W
-	       		      else 
-		     		 hunt NW
-			      end
- 		  	   end
-         	        end
-            	     end
-                  end
-               end
-            end
-         end
-      end
-   end
-end
-    ";
+    use crate::code::CODE;
 
 static EXPECTED_TOKENS: [Token; 25]  = [Token::Sim, Token::If, Token::Lpar, Token::IdEnergy, Token::Gt, 
     Token::Int(0), Token::Rpar, Token::Then, Token::If, Token::Lpar, Token::IdRest, Token::Gt, Token::Int(16), 

@@ -1,32 +1,41 @@
+use std::fs::read_to_string;
 use std::path::PathBuf;
+use std::rc::Rc;
 
-use crate::creature::Creature;
+use rand::Rng;
+
+use crate::compiler::get_program;
+use crate::creature::{Creature, CreatureType};
 use crate::grid::Grid;
+
+/*****************************************************************************/
+/********** SIMULATION TYPE **************************************************/
+/*****************************************************************************/
 
 pub struct Simulation {
     prey_filename: Option<PathBuf>,
     pred_filename: Option<PathBuf>,
     run: bool,
-    n_prey: i32,
-    n_pred: i32,
     creatures: Vec<Creature>,
     valid_configuration: bool,
-    grid: Grid
+    grid: Grid,
 }
 
 impl Simulation {
     
-    pub fn new() -> Simulation {
+    pub fn new(xsize: usize, ysize: usize) -> Simulation {
         Simulation {
-            n_prey: -1,
-            n_pred: -1,
             prey_filename: None,
             pred_filename: None,
             run: false,
             valid_configuration: false,
             creatures: Vec::new(),
-            grid: Grid::new(100, 100),
+            grid: Grid::new(xsize, ysize),
         }
+    }
+
+    pub fn grid(&self) -> &Grid {
+        &self.grid
     }
 
     pub fn set_prey_filename(&mut self, path: &PathBuf) {
@@ -54,22 +63,57 @@ impl Simulation {
         self.run
     }
 
-    pub fn check(&self) {
+    pub fn config(&mut self, n_pred: i32, n_prey: i32) -> Option<String> {
 
-    }
+        let prey_path = match &self.prey_filename {
+            Some(s) => s,
+            None => { return Some("Invalid Prey Program Path".to_string()); }
+        };
 
-    pub fn config(&mut self, n_pred: i32, n_prey: i32) {
-        // let prey_file = File::open(self.prey_filename).expect("Couldn't open file");
-        // let pred_file = File::open(self.pred_filename).expect("Couldn't open file");
+        let pred_path = match &self.pred_filename {
+            Some(s) => s,
+            None => { return Some("Invalid Predator Program Path".to_string()); }
+        };
 
-        // let mut reader = BufReader::new(file);
-        // let mut contents = String::new();
-        // let _ = reader.read_to_string(&mut contents);
+        let prey_contents = match read_to_string(prey_path) {
+            Ok(s) => s,
+            Err(_) => { return Some("Prey Program IO Error".to_string()); }
+        };
 
-        // let pre
+        let prey_program = match get_program(&prey_contents) {
+            Ok(p) => Rc::new(p),
+            Err(e) => { return Some(format!("Prey compiler error {:?}", e)); }
+        };
 
-        // text_view.buffer().set_text(&contents);
+        let pred_contents = match read_to_string(pred_path) {
+            Ok(s) => s,
+            Err(_) => { return Some("Predator Program IO Error".to_string()); }
+        };
 
-        // if 
+        let pred_program = match get_program(&pred_contents) {
+            Ok(p) => Rc::new(p),
+            Err(e) => { return Some(format!("Predator compiler error {:?}", e)); }
+        };
+
+        // Clear all existing creatures and create new ones.
+        self.creatures.clear();
+
+        let mut rng = rand::thread_rng();
+        for _ in 0..n_pred {
+            let x = rng.gen_range(0..100);
+            let y = rng.gen_range(0..100);
+            let c = Creature::new(CreatureType::Predator, x, y, pred_program.clone(), &mut self.grid);
+            self.creatures.push(c);
+        }
+        for _ in 0..n_prey {
+            let x = rng.gen_range(0..100);
+            let y = rng.gen_range(0..100);
+            let c = Creature::new(CreatureType::Prey, x, y, prey_program.clone(), &mut self.grid);
+            self.creatures.push(c);
+        }
+
+        // We now have a valid simulation configured.
+        self.valid_configuration = true;
+        None
     }
 }

@@ -1,3 +1,4 @@
+#[cfg(test)]
 pub static CODE: &str = "\
 sim
    if (energy > 0) then

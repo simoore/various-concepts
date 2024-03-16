@@ -1,16 +1,18 @@
+use std::rc::Rc;
+
 use rand::Rng;
 
 use crate::grid::{Grid, HasLocation};
-use crate::program::{Action, Direction};
+use crate::program::{Action, Direction, Program};
 
 /*****************************************************************************/
 /********** CONSTANTS ********************************************************/
 /*****************************************************************************/
 
-// The initial amount of energy for new creatues.
+/// The initial amount of energy for new creatues.
 const INIT_ENERGY: i32 = 100;
 
-// The energy threshold requied to be available to breed.
+/// The energy threshold requied to be available to breed.
 const BREED_ENERGY_THRESHOLD: i32 = 25;
 
 /*****************************************************************************/
@@ -18,7 +20,7 @@ const BREED_ENERGY_THRESHOLD: i32 = 25;
 /*****************************************************************************/
 
 #[derive(PartialEq, Copy, Clone)]
-enum CreatureType { Predator, Prey }
+pub enum CreatureType { Predator, Prey }
 
 pub struct Creature {
     creature_type: CreatureType,
@@ -29,6 +31,7 @@ pub struct Creature {
     count_down: i32,
     visible: bool,
     resting: bool,
+    program: Rc<Program>
 }
 
 /*****************************************************************************/
@@ -51,8 +54,8 @@ impl HasLocation for Creature {
 
 impl Creature {
 
-    fn new(creature_type: CreatureType, x: i32, y: i32) -> Creature {
-        Creature {
+    pub fn new(creature_type: CreatureType, x: i32, y: i32, program: Rc<Program>, grid: &mut Grid) -> Creature {
+        let creature = Creature {
             creature_type: creature_type,
             energy: INIT_ENERGY,
             x_coord: x,
@@ -61,21 +64,28 @@ impl Creature {
             count_down: 0,
             visible: true,
             resting: false,
+            program
+        };
+
+        match creature.creature_type {
+            CreatureType::Predator => { grid.location(&creature).add_predator(creature.energy); }
+            CreatureType::Prey => { grid.location(&creature).add_prey(creature.energy); }
         }
+        creature
     }
 
-    // The creature is dead is energy reaches 0.
+    /// The creature is dead is energy reaches 0.
     pub fn is_dead(&self) -> bool {
         self.energy <= 0
     }
 
-    // When a creature changes energy, we have to check if it has enough energy to breed and flag that with the 
-    // location it is in.
-    //
-    // @param delta_energy
-    //      The change in energy for the creature.
-    // @param grid
-    //      The simulation grid.
+    /// When a creature changes energy, we have to check if it has enough energy to breed and flag that with the 
+    /// location it is in.
+    ///
+    /// @param delta_energy
+    ///     The change in energy for the creature.
+    /// @param grid
+    ///     The simulation grid.
     fn change_energy(&mut self, delta_energy: i32, grid: &mut Grid) {
         let original_energy = self.energy;
         self.energy += delta_energy;
@@ -92,7 +102,7 @@ impl Creature {
         }
     }
 
-    // Setting the creature to invisible change its visibility in the location it is in now.
+    /// Setting the creature to invisible change its visibility in the location it is in now.
     fn set_invisible(&mut self, grid: &mut Grid) {
         match self.creature_type {
             CreatureType::Predator => grid.location(self).rest_predator(self.energy),
@@ -101,7 +111,7 @@ impl Creature {
         self.visible = false;
     }
 
-    // Setting the creature to visible change its visibility in the location it is in now.
+    /// Setting the creature to visible change its visibility in the location it is in now.
     fn set_visible(&mut self, grid: &mut Grid) {
         match self.creature_type {
             CreatureType::Predator => grid.location(self).awake_predator(self.energy),
@@ -110,7 +120,7 @@ impl Creature {
         self.visible = true;
     }
 
-    // Moves a creature from one location to another.
+    /// Moves a creature from one location to another.
     fn movee(&mut self, dir: Direction, grid: &mut Grid) {
 
         // Remove creature from location.
@@ -153,7 +163,7 @@ impl Creature {
         }
     }
 
-    // Resting makes the creature invisible in the location.
+    /// Resting makes the creature invisible in the location.
     fn rest(&mut self, count: i32, grid: &mut Grid) {
         self.count_down = count;
         self.set_invisible(grid);
@@ -165,8 +175,8 @@ impl Creature {
         self.awake_daily = 0;
     }
 
-    // When prey hunts, it is always successful since it just grazes. Predators on the other hand have a random change
-    // to hunt prey and only if prey exists in the location.
+    /// When prey hunts, it is always successful since it just grazes. Predators on the other hand have a random change
+    /// to hunt prey and only if prey exists in the location.
     fn hunt(&mut self, dir: Direction, grid: &mut Grid) {
         self.movee(dir, grid);
         if self.creature_type == CreatureType::Prey {
@@ -195,18 +205,11 @@ impl Creature {
             self.set_invisible(grid);
             self.energy -= 25;
 
-            let mut baby1 = Creature::new(self.creature_type.clone(), self.x_coord, self.y_coord);
-            let mut baby2 = Creature::new(self.creature_type.clone(), self.x_coord, self.y_coord);
-            match self.creature_type {
-                CreatureType::Predator => {
-                    grid.location(self).add_predator(self.energy);
-                    grid.location(self).add_predator(self.energy);
-                }
-                CreatureType::Prey => {
-                    grid.location(self).add_prey(self.energy);
-                    grid.location(self).add_prey(self.energy);
-                }
-            }
+            let mut baby1 = Creature::new(self.creature_type.clone(), self.x_coord, self.y_coord, 
+                self.program.clone(), grid);
+            let mut baby2 = Creature::new(self.creature_type.clone(), self.x_coord, self.y_coord, 
+                self.program.clone(), grid);
+            
             baby1.rest(6, grid);
             baby2.rest(6, grid);
             vec![baby1, baby2]
@@ -249,8 +252,7 @@ impl Creature {
                 self.set_visible(grid);
             }
 
-            // TODO: Add program here
-            let new_action = Action::Move(Direction::NW);
+            let new_action = self.program.execute(self.energy, self.awake_daily);
 
             let new_creatures: Vec<Creature> = match new_action {
                 Action::Move(dir) => { self.movee(dir, grid); Vec::new() }

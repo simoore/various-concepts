@@ -27,9 +27,7 @@ pub enum CompilerError {
     NoThenKeyword,
     NotADirectionToken,
     NoSimKeyword,
-    ProgramMissingEndStatement,
     RestNotFollowedByCount,
-    Unimplemented,
 }
 
 #[derive(Debug)]
@@ -102,12 +100,12 @@ fn consume_token(token: Token, tokens: &[Token], error: CompilerError) -> Result
 /*****************************************************************************/
 
 
-// Finds an identifier at the start of the token stream.
-//
-// @param tokens
-//      The unprocessed token stream.
-// @return
-//      The identifier if found, otherwise a compiler error.
+/// Finds an identifier at the start of the token stream.
+///
+/// @param tokens
+///     The unprocessed token stream.
+/// @return
+///     The identifier if found, otherwise a compiler error.
 fn get_identifier(tokens: &[Token]) -> Result<IdentifierReturn, CompilerError> {
     let (token, tokens) = head_token(tokens, CompilerError::InvalidIdentifier)?;
     match token {
@@ -121,13 +119,13 @@ fn get_identifier(tokens: &[Token]) -> Result<IdentifierReturn, CompilerError> {
 }
 
 
-// Finds a condition expression.
-//
-// @param tokens
-//      The tokens of the sim2 program. A valid condition expression is expected at the start of this list.
-// @return
-//      The condition expression found + the tokens minus the ones consumed for the condition expression. A
-//      compiler error is returned if something went wrong.
+/// Finds a condition expression.
+///
+/// @param tokens
+///     The tokens of the sim2 program. A valid condition expression is expected at the start of this list.
+/// @return
+///     The condition expression found + the tokens minus the ones consumed for the condition expression. A
+///     compiler error is returned if something went wrong.
 fn get_condition(tokens: &[Token]) -> Result<ConditionReturn, CompilerError> {
     let tokens = consume_token(Token::Lpar, tokens, CompilerError::ConditionMissingLPar)?;
     let (identifier_a, tokens) = get_identifier(tokens)?;
@@ -139,12 +137,12 @@ fn get_condition(tokens: &[Token]) -> Result<ConditionReturn, CompilerError> {
 }
 
 
-// Finds an arithmetic expression at the start of the unprocessed token stream.
-//
-// @param tokens
-//      The unprocessed token stream.
-// @return
-//      The arithmetic expression with the remaining unprocessed tokens or a compiler error.
+/// Finds an arithmetic expression at the start of the unprocessed token stream.
+///
+/// @param tokens
+///     The unprocessed token stream.
+/// @return
+///     The arithmetic expression with the remaining unprocessed tokens or a compiler error.
 fn get_arithmetic(tokens: &[Token]) -> Result<ArithmeticReturn, CompilerError> {
     let (token, tokens) = head_token(tokens, CompilerError::NoAddOrSubstract)?;
     let op = map_arithmetic_operator_token(token)?;
@@ -154,12 +152,11 @@ fn get_arithmetic(tokens: &[Token]) -> Result<ArithmeticReturn, CompilerError> {
 }
 
 
-// Finds an expression at the start of the unprocessed token stream. It checks the first token, but doesn't consume
-// it.
-//
-// @param tokens
-//      The stream of unprocessed tokens.
-// @param 
+/// Finds an expression at the start of the unprocessed token stream. It checks the first token, but doesn't consume
+/// it.
+///
+/// @param tokens
+///     The stream of unprocessed tokens.
 fn get_expression(tokens: &[Token])  -> Result<ExpressionReturn, CompilerError> {
     let token = tokens.get(0).ok_or(CompilerError::NoExpressionFound)?;
     match *token {
@@ -176,7 +173,7 @@ fn get_expression(tokens: &[Token])  -> Result<ExpressionReturn, CompilerError> 
 /********** GET STATEMENTS ***************************************************/
 /*****************************************************************************/
 
-// We have consumed the move keyword and now are checking for the direction of the move statement.
+/// We have consumed the move keyword and now are checking for the direction of the move statement.
 fn get_move(tokens: &[Token]) -> Result<StatementReturn, CompilerError> {
     let (token, tokens) = head_token(tokens, CompilerError::MoveNotFollowedByDirection)?;
     let dir = map_direction_token(token)?;
@@ -204,14 +201,14 @@ fn get_rest(tokens: &[Token]) -> Result<StatementReturn, CompilerError> {
     }
 }
 
-// Finds an assign statement at the start of the unprocessed token stream.
-//
-// @param tokens
-//      The unprocessed token stream.
-// @param key
-//      The variable name we are assigning to.
-// @return
-//      The new assign statement or a compiler error is something went wrong.
+/// Finds an assign statement at the start of the unprocessed token stream.
+///
+/// @param tokens
+///     The unprocessed token stream.
+/// @param key
+///     The variable name we are assigning to.
+/// @return
+///     The new assign statement or a compiler error is something went wrong.
 fn get_assign<'a>(tokens: &'a[Token], key: &String) -> Result<StatementReturn<'a>, CompilerError> {
     let var = Variable::new(key.clone());
     let tokens = consume_token(Token::OneEq, tokens, CompilerError::InvalidAssignStatement)?;
@@ -220,8 +217,8 @@ fn get_assign<'a>(tokens: &'a[Token], key: &String) -> Result<StatementReturn<'a
 }
 
 
-// An if token has been detect so we now analyze the set or proceeding tokens to constuct the ifthen statement.
-// The if token is already consumed.
+/// An if token has been detect so we now analyze the set or proceeding tokens to constuct the ifthen statement.
+/// The if token is already consumed.
 fn get_ifthen(tokens: &[Token]) -> Result<StatementReturn, CompilerError> {
     let (condition, tokens) = get_condition(tokens)?;
     let tokens = consume_token(Token::Then, tokens, CompilerError::NoThenKeyword)?;
@@ -236,7 +233,6 @@ fn get_ifthen(tokens: &[Token]) -> Result<StatementReturn, CompilerError> {
     let tokens = consume_token(Token::End, tokens, CompilerError::NoEndKeyword)?;
     Ok((Box::new(IfThen::new(condition, then_statement, Some(else_statement))), tokens))
 }
-
 
 
 fn get_block(tokens: &[Token])  -> Result<StatementReturn, CompilerError> {
@@ -254,15 +250,15 @@ fn get_block(tokens: &[Token])  -> Result<StatementReturn, CompilerError> {
 }
 
 
-// Analyses a token that is supposed to start a statement and calls the correct constructor. If the token is not 
-// correct for the start of the statement and error is returned.
-//
-// @param tokens     
-//      The unconsummed token stream.
-// @param vars          
-//      The table containing the program variables.
-// @return        
-//      The next statment in the lexer stream.
+/// Analyses a token that is supposed to start a statement and calls the correct constructor. If the token is not 
+/// correct for the start of the statement and error is returned.
+///
+/// @param tokens     
+///     The unconsummed token stream.
+/// @param vars          
+///     The table containing the program variables.
+/// @return        
+///     The next statment in the lexer stream.
 fn get_statement(tokens: &[Token]) -> Result<StatementReturn, CompilerError> {
     let (token, tokens) = head_token(tokens, CompilerError::ImproperStartOfStatment)?;
     match token {
@@ -278,13 +274,13 @@ fn get_statement(tokens: &[Token]) -> Result<StatementReturn, CompilerError> {
 }
 
 
-// Creates a new program. This involves checking for the 'sim' keyword, the statement of the program, and the 
-// 'end' keyword.
-//
-// @param text      
-//      The sim2 program.
-// @return
-//      The new program.
+/// Creates a new program. This involves checking for the 'sim' keyword, the statement of the program, and the 
+/// 'end' keyword.
+///
+/// @param text      
+///     The sim2 program.
+/// @return
+///     The new program.
 pub fn get_program(text: &str) -> Result<Program, CompilerOrLexerError> {
     let tokens = tokenize(text)
         .map_err(|e| CompilerOrLexerError::L(e))?;
@@ -294,6 +290,7 @@ pub fn get_program(text: &str) -> Result<Program, CompilerOrLexerError> {
         .map_err(|e| CompilerOrLexerError::C(e))?;
     consume_token(Token::End, tokens, CompilerError::EndOfProgramNotLastToken)
         .map_err(|e| CompilerOrLexerError::C(e))?;
+    // TODO: we don't handle EOF well and we miss the last END token if a newline or whitespace is not there.
     Ok(Program::new(statement))
 }
 
@@ -304,25 +301,11 @@ pub fn get_program(text: &str) -> Result<Program, CompilerOrLexerError> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::code::CODE;
-
-    #[test]
-    fn test_get_program() {
-        let res = get_program(&CODE);
-        match res {
-            Ok(program) => program.print(),
-            Err(e) => { dbg!("{:?}", e); () }
-        }
-
-        // for (t, et) in std::iter::zip(&tokens, &EXPECTED_TOKENS) {
-        //     assert_eq!(et, t);
-        // }
-    }
 
     #[test]
     fn test_consume_token() {
         let tokens = vec![Token::DirE];
-        let tokens = consume_token(Token::DirE, &tokens, CompilerError::Unimplemented).unwrap();
+        let tokens = consume_token(Token::DirE, &tokens, CompilerError::NotADirectionToken).unwrap();
         assert_eq!(tokens.len(), 0);
     }
 
