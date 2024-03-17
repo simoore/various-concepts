@@ -12,7 +12,7 @@ pub trait Expression: Debug + Display {
     fn execute(&self, cs: &CreatureStats, vars: &HashMap<String, i32>) -> i32;
 }
 
-/// Statements must evaluate to some Action type as the purpose of a sim2 program is to determine an action 
+/// Statements must evaluate to some Action type as the purpose of a sim2 program is to determine an action
 /// that the predator/prey actor must do.
 pub trait Statement: Debug + Display {
     fn execute(&self, cs: &CreatureStats, vars: &mut HashMap<String, i32>) -> Action;
@@ -24,7 +24,11 @@ pub trait Statement: Debug + Display {
 
 /// Defines the operator used in condition expressions.
 #[derive(Debug)]
-pub enum ConditionOp { Lt, Gt, Eq }
+pub enum ConditionOp {
+    Lt,
+    Gt,
+    Eq,
+}
 
 impl Display for ConditionOp {
     fn fmt(&self, fmt: &mut std::fmt::Formatter) -> std::fmt::Result {
@@ -38,7 +42,10 @@ impl Display for ConditionOp {
 
 /// Defines the operator used in arithmetic expressions.
 #[derive(Debug)]
-pub enum ArithmeticOp { Add, Sub }
+pub enum ArithmeticOp {
+    Add,
+    Sub,
+}
 
 impl Display for ArithmeticOp {
     fn fmt(&self, fmt: &mut std::fmt::Formatter) -> std::fmt::Result {
@@ -48,7 +55,6 @@ impl Display for ArithmeticOp {
         }
     }
 }
-
 
 /// When the program is evaluated, we can take into account the state of the creature when making decisions about
 /// its behaviour. There are two states that can be considered. Its energy and and how much it has rested during
@@ -64,7 +70,16 @@ pub struct CreatureStats {
 
 /// The direction an action is performed in.
 #[derive(Clone, Debug, PartialEq)]
-pub enum Direction { N, NE, E, SE, S, SW, W, NW }
+pub enum Direction {
+    N,
+    NE,
+    E,
+    SE,
+    S,
+    SW,
+    W,
+    NW,
+}
 
 impl Display for Direction {
     fn fmt(&self, fmt: &mut std::fmt::Formatter) -> std::fmt::Result {
@@ -87,7 +102,13 @@ impl Display for Direction {
 
 /// The action that the creature performs after the sim2 program runs.
 #[derive(Clone, Debug, PartialEq)]
-pub enum Action { Move(Direction), Hunt(Direction), Breed(Direction), Rest(i32), None }
+pub enum Action {
+    Move(Direction),
+    Hunt(Direction),
+    Breed(Direction),
+    Rest(i32),
+    None,
+}
 
 impl Display for Action {
     fn fmt(&self, fmt: &mut std::fmt::Formatter) -> std::fmt::Result {
@@ -113,7 +134,11 @@ impl Statement for Action {
 
 /// The Identifier enum list special identifiers that generate values in different ways compared to normal variables.
 #[derive(Debug)]
-pub enum SpecialIdentifier { Rand, Energy, DailyRest }
+pub enum SpecialIdentifier {
+    Rand,
+    Energy,
+    DailyRest,
+}
 
 impl Display for SpecialIdentifier {
     fn fmt(&self, fmt: &mut std::fmt::Formatter) -> std::fmt::Result {
@@ -124,7 +149,6 @@ impl Display for SpecialIdentifier {
         }
     }
 }
-
 
 impl Expression for SpecialIdentifier {
     fn execute(&self, cs: &CreatureStats, _vars: &HashMap<String, i32>) -> i32 {
@@ -139,14 +163,15 @@ impl Expression for SpecialIdentifier {
     }
 }
 
-
 /*****************************************************************************/
 /********** TYPE: Constant ***************************************************/
 /*****************************************************************************/
 
 /// A constant value.
 #[derive(Debug)]
-pub struct Constant { value: i32 }
+pub struct Constant {
+    value: i32,
+}
 
 impl Constant {
     pub fn new(value: i32) -> Constant {
@@ -172,7 +197,9 @@ impl Expression for Constant {
 
 /// A variable that can change value during execution of the sim2 program.
 #[derive(Debug)]
-pub struct Variable { key: String }
+pub struct Variable {
+    key: String,
+}
 
 impl Variable {
     pub fn new(key: String) -> Variable {
@@ -198,14 +225,14 @@ impl Expression for Variable {
 
 #[derive(Debug)]
 pub enum Identifier {
-    SpecialIdentifier(SpecialIdentifier),
+    Special(SpecialIdentifier),
     Variable(Variable),
     Constant(Constant),
 }
 
 impl Identifier {
     pub fn new_specialized(ident: SpecialIdentifier) -> Identifier {
-        Identifier::SpecialIdentifier(ident)
+        Identifier::Special(ident)
     }
 
     pub fn new_variable(key: String) -> Identifier {
@@ -220,21 +247,21 @@ impl Identifier {
 impl Display for Identifier {
     fn fmt(&self, fmt: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
-            Identifier::SpecialIdentifier(s) => write!(fmt, "{}", s),
+            Identifier::Special(s) => write!(fmt, "{}", s),
             Identifier::Variable(v) => write!(fmt, "{}", v),
             Identifier::Constant(c) => write!(fmt, "{}", c),
         }
-    } 
+    }
 }
 
 impl Expression for Identifier {
     fn execute(&self, cs: &CreatureStats, vars: &HashMap<String, i32>) -> i32 {
         match self {
-            Identifier::SpecialIdentifier(s) => s.execute(cs, &vars),
-            Identifier::Variable(v) => v.execute(cs, &vars),
-            Identifier::Constant(c) => c.execute(cs, &vars),
+            Identifier::Special(s) => s.execute(cs, vars),
+            Identifier::Variable(v) => v.execute(cs, vars),
+            Identifier::Constant(c) => c.execute(cs, vars),
         }
-    } 
+    }
 }
 
 /*****************************************************************************/
@@ -268,7 +295,7 @@ impl Expression for Arithmetic {
             ArithmeticOp::Add => self.a.execute(cs, vars) + self.b.execute(cs, vars),
             ArithmeticOp::Sub => self.a.execute(cs, vars) - self.b.execute(cs, vars),
         }
-    } 
+    }
 }
 
 /*****************************************************************************/
@@ -303,8 +330,12 @@ impl Expression for Condition {
             ConditionOp::Gt => self.a.execute(cs, vars) > self.b.execute(cs, vars),
             ConditionOp::Eq => self.a.execute(cs, vars) == self.b.execute(cs, vars),
         };
-        if istrue { 1 } else { 0 }
-    } 
+        if istrue {
+            1
+        } else {
+            0
+        }
+    }
 }
 
 /*****************************************************************************/
@@ -331,7 +362,7 @@ impl Display for Assign {
 
 impl Statement for Assign {
     fn execute(&self, cs: &CreatureStats, vars: &mut HashMap<String, i32>) -> Action {
-        let value = self.expression.execute(&cs, &vars);
+        let value = self.expression.execute(cs, vars);
         vars.insert(self.var.key.clone(), value);
         Action::None
     }
@@ -349,9 +380,16 @@ pub struct IfThen {
 }
 
 impl IfThen {
-    pub fn new(condition: Condition, then_statement: Box<dyn Statement>, 
-            else_statement: Option<Box<dyn Statement>>) -> IfThen {
-        IfThen { condition, then_statement, else_statement }
+    pub fn new(
+        condition: Condition,
+        then_statement: Box<dyn Statement>,
+        else_statement: Option<Box<dyn Statement>>,
+    ) -> IfThen {
+        IfThen {
+            condition,
+            then_statement,
+            else_statement,
+        }
     }
 }
 
@@ -370,7 +408,7 @@ impl Display for IfThen {
 
 impl Statement for IfThen {
     fn execute(&self, cs: &CreatureStats, vars: &mut HashMap<String, i32>) -> Action {
-        if self.condition.execute(cs, &vars) == 1 {
+        if self.condition.execute(cs, vars) == 1 {
             self.then_statement.execute(cs, vars)
         } else {
             match &self.else_statement {
@@ -411,7 +449,7 @@ impl Statement for Block {
     fn execute(&self, cs: &CreatureStats, vars: &mut HashMap<String, i32>) -> Action {
         let mut action = Action::None;
         for statement in &self.statements {
-            action = statement.execute(&cs, vars);
+            action = statement.execute(cs, vars);
         }
         action
     }
@@ -428,7 +466,7 @@ pub struct Program {
 
 impl Program {
     pub fn new(statement: Box<dyn Statement>) -> Program {
-        Program{ statement }
+        Program { statement }
     }
 
     pub fn execute(&self, energy: i32, daily_rest: i32) -> Action {

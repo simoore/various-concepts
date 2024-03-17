@@ -6,36 +6,36 @@ use std::fmt;
 
 #[derive(Clone, Debug)]
 pub enum Token {
-    Id(String), 
-    Int(i32), 
-    Sim, 
-    Lpar, 
-    Rpar, 
-    End, 
-    If, 
+    Id(String),
+    Int(i32),
+    Sim,
+    Lpar,
+    Rpar,
+    End,
+    If,
     Block,
-    Then, 
-    Else, 
-    Rand, 
-    OneEq, 
-    Add, 
-    Sub, 
-    Lt, 
-    Gt, 
-    TwoEq, 
-    Move, 
+    Then,
+    Else,
+    Rand,
+    OneEq,
+    Add,
+    Sub,
+    Lt,
+    Gt,
+    TwoEq,
+    Move,
     Hunt,
-    Rest, 
-    Breed, 
-    IdRest, 
-    IdEnergy, 
-    DirN, 
-    DirNE, 
-    DirE, 
-    DirSE, 
-    DirS, 
-    DirSW, 
-    DirW, 
+    Rest,
+    Breed,
+    IdRest,
+    IdEnergy,
+    DirN,
+    DirNE,
+    DirE,
+    DirSE,
+    DirS,
+    DirSW,
+    DirW,
     DirNW,
 }
 
@@ -45,7 +45,7 @@ enum State {
     Identifier,
     Operator,
     Number,
-    Stop
+    Stop,
 }
 
 #[derive(PartialEq)]
@@ -75,7 +75,6 @@ impl From<std::num::ParseIntError> for LexerError {
     }
 }
 
-
 /// Implements equality for the Token enum.
 impl PartialEq for Token {
     fn eq(&self, other: &Self) -> bool {
@@ -91,10 +90,8 @@ impl PartialEq for Token {
     }
 }
 
-
 /// This is required to implement the std::error::Error trait for LexerError.
 impl std::error::Error for LexerError {}
-
 
 /// This allows LexerErrors to be used with a println! formatter.
 impl fmt::Display for LexerError {
@@ -110,43 +107,44 @@ impl fmt::Display for LexerError {
     }
 }
 
-
 /// Converts the sim2 code into a vector of tokens.
-/// 
+///
 /// contents
 ///      The sim2 string.
 /// returns
 ///      The vector of tokens if there are not parsing errors.
 pub fn tokenize(contents: &str) -> Result<Vec<Token>, LexerError> {
-    let mut head = 0;
     let mut tail = 0;
     let mut state = State::Initial;
     let mut tokens: Vec<Token> = vec![];
-    for c in contents.chars() {
+    for (head, c) in contents.chars().enumerate() {
         let ct = char_type(c)?;
         let mut new_state = transition(&ct, &state)?;
 
         match new_state {
-            State::Initial => { tail = head; }
+            State::Initial => {
+                tail = head;
+            }
             State::Stop => {
                 let slice = &contents[tail..head];
-                let token = str2token(&slice, &state)?;
+                let token = str2token(slice, &state)?;
                 tokens.push(token);
                 tail = head;
                 // process current character again
                 new_state = transition(&ct, &State::Initial)?;
             }
-            _ if state == State::Initial => { tail = head; }
+            _ if state == State::Initial => {
+                tail = head;
+            }
             _ => {}
         }
         state = new_state;
-        head += 1;
     }
     Ok(tokens)
 }
 
 /// Coverts the framed token string to a token.
-/// 
+///
 /// slice
 ///     The string representation of the token.
 /// state
@@ -155,13 +153,16 @@ fn str2token(slice: &str, state: &State) -> Result<Token, LexerError> {
     match state {
         State::Identifier => Ok(process_identifier(slice)),
         State::Operator => Ok(process_operator(slice)?),
-        State::Number => slice.parse::<i32>().map(|x| Token::Int(x)).map_err(|_| LexerError::ParseNumberError),
+        State::Number => slice
+            .parse::<i32>()
+            .map(Token::Int)
+            .map_err(|_| LexerError::ParseNumberError),
         _ => Err(LexerError::InvalidTokenState),
     }
 }
 
 /// Labels the type of char that the lexer is processing.
-/// 
+///
 /// c
 ///     The char to label.
 /// returns
@@ -182,8 +183,8 @@ fn char_type(c: char) -> Result<CharType, LexerError> {
 
 /// Examines the current state of the lexer amd the current character it is processing and adjusts the state.
 /// This is used to frame valid tokens in the stream.
-/// 
-/// c 
+///
+/// c
 ///     The current character the lexer is processing.
 /// s
 ///     The current state of the lexer.
@@ -222,7 +223,7 @@ fn transition(ct: &CharType, s: &State) -> Result<State, LexerError> {
             CharType::Punc => Ok(State::Operator),
         },
     }
-} 
+}
 
 /// Identifies the keywords from identifiers.
 ///
@@ -286,10 +287,33 @@ mod tests {
     use super::*;
     use crate::code::CODE;
 
-static EXPECTED_TOKENS: [Token; 25]  = [Token::Sim, Token::If, Token::Lpar, Token::IdEnergy, Token::Gt, 
-    Token::Int(0), Token::Rpar, Token::Then, Token::If, Token::Lpar, Token::IdRest, Token::Gt, Token::Int(16), 
-    Token::Rpar, Token::Then, Token::Rest, Token::Int(8), Token::Else, Token::If, Token::Lpar, Token::IdEnergy, 
-    Token::Gt, Token::Int(100), Token::Rpar, Token::Then];
+    static EXPECTED_TOKENS: [Token; 25] = [
+        Token::Sim,
+        Token::If,
+        Token::Lpar,
+        Token::IdEnergy,
+        Token::Gt,
+        Token::Int(0),
+        Token::Rpar,
+        Token::Then,
+        Token::If,
+        Token::Lpar,
+        Token::IdRest,
+        Token::Gt,
+        Token::Int(16),
+        Token::Rpar,
+        Token::Then,
+        Token::Rest,
+        Token::Int(8),
+        Token::Else,
+        Token::If,
+        Token::Lpar,
+        Token::IdEnergy,
+        Token::Gt,
+        Token::Int(100),
+        Token::Rpar,
+        Token::Then,
+    ];
 
     #[test]
     fn test_tokenize() {

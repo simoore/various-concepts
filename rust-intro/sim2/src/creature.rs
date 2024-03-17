@@ -20,7 +20,10 @@ const BREED_ENERGY_THRESHOLD: i32 = 25;
 /*****************************************************************************/
 
 #[derive(PartialEq, Copy, Clone)]
-pub enum CreatureType { Predator, Prey }
+pub enum CreatureType {
+    Predator,
+    Prey,
+}
 
 pub struct Creature {
     creature_type: CreatureType,
@@ -31,7 +34,7 @@ pub struct Creature {
     count_down: i32,
     visible: bool,
     resting: bool,
-    program: Rc<Program>
+    program: Rc<Program>,
 }
 
 /*****************************************************************************/
@@ -53,10 +56,15 @@ impl HasLocation for Creature {
 /*****************************************************************************/
 
 impl Creature {
-
-    pub fn new(creature_type: CreatureType, x: i32, y: i32, program: Rc<Program>, grid: &mut Grid) -> Creature {
+    pub fn new(
+        creature_type: CreatureType,
+        x: i32,
+        y: i32,
+        program: Rc<Program>,
+        grid: &mut Grid,
+    ) -> Creature {
         let creature = Creature {
-            creature_type: creature_type,
+            creature_type,
             energy: INIT_ENERGY,
             x_coord: x,
             y_coord: y,
@@ -64,12 +72,16 @@ impl Creature {
             count_down: 0,
             visible: true,
             resting: false,
-            program
+            program,
         };
 
         match creature.creature_type {
-            CreatureType::Predator => { grid.location(&creature).add_predator(creature.energy); }
-            CreatureType::Prey => { grid.location(&creature).add_prey(creature.energy); }
+            CreatureType::Predator => {
+                grid.location(&creature).add_predator(creature.energy);
+            }
+            CreatureType::Prey => {
+                grid.location(&creature).add_prey(creature.energy);
+            }
         }
         creature
     }
@@ -79,7 +91,7 @@ impl Creature {
         self.energy <= 0
     }
 
-    /// When a creature changes energy, we have to check if it has enough energy to breed and flag that with the 
+    /// When a creature changes energy, we have to check if it has enough energy to breed and flag that with the
     /// location it is in.
     ///
     /// @param delta_energy
@@ -94,7 +106,8 @@ impl Creature {
                 CreatureType::Predator => grid.location(self).remove_breeding_predator(),
                 CreatureType::Prey => grid.location(self).remove_breeding_prey(),
             }
-        } else if original_energy <= BREED_ENERGY_THRESHOLD && self.energy > BREED_ENERGY_THRESHOLD {
+        } else if original_energy <= BREED_ENERGY_THRESHOLD && self.energy > BREED_ENERGY_THRESHOLD
+        {
             match self.creature_type {
                 CreatureType::Predator => grid.location(self).add_breeding_predator(),
                 CreatureType::Prey => grid.location(self).add_breeding_prey(),
@@ -122,7 +135,6 @@ impl Creature {
 
     /// Moves a creature from one location to another.
     fn movee(&mut self, dir: Direction, grid: &mut Grid) {
-
         // Remove creature from location.
         match self.creature_type {
             CreatureType::Predator => grid.location(self).remove_predator(self.energy),
@@ -134,17 +146,17 @@ impl Creature {
 
         // Adjust coordinates based on direction of move.
         match dir {
-            Direction::NW | Direction::N | Direction::NE => self.y_coord -= 1, 
-            Direction::SW | Direction::S | Direction::SE => self.y_coord += 1, 
+            Direction::NW | Direction::N | Direction::NE => self.y_coord -= 1,
+            Direction::SW | Direction::S | Direction::SE => self.y_coord += 1,
             _ => (),
         }
         match dir {
-            Direction::NE | Direction::E | Direction::SE => self.x_coord += 1, 
-            Direction::NW | Direction::W | Direction::SW => self.x_coord -= 1, 
+            Direction::NE | Direction::E | Direction::SE => self.x_coord += 1,
+            Direction::NW | Direction::W | Direction::SW => self.x_coord -= 1,
             _ => (),
         }
 
-        // Wrap coordinates if they are out of bounds. 
+        // Wrap coordinates if they are out of bounds.
         if self.x_coord >= (grid.xsize() as i32) {
             self.x_coord = 0;
         } else if self.x_coord < 0 {
@@ -155,7 +167,7 @@ impl Creature {
         } else if self.y_coord < 0 {
             self.y_coord = (grid.ysize() as i32) - 1;
         }
-        
+
         // Add creature from location.
         match self.creature_type {
             CreatureType::Predator => grid.location(self).add_predator(self.energy),
@@ -194,22 +206,32 @@ impl Creature {
 
     fn breed(&mut self, dir: Direction, grid: &mut Grid) -> Vec<Creature> {
         self.movee(dir, grid);
-        
+
         let has_partner = match self.creature_type {
             CreatureType::Predator => grid.location(self).predator_has_partner(),
             CreatureType::Prey => grid.location(self).prey_has_partner(),
         };
-        
+
         if has_partner {
             self.count_down = 6;
             self.set_invisible(grid);
             self.energy -= 25;
 
-            let mut baby1 = Creature::new(self.creature_type.clone(), self.x_coord, self.y_coord, 
-                self.program.clone(), grid);
-            let mut baby2 = Creature::new(self.creature_type.clone(), self.x_coord, self.y_coord, 
-                self.program.clone(), grid);
-            
+            let mut baby1 = Creature::new(
+                self.creature_type,
+                self.x_coord,
+                self.y_coord,
+                self.program.clone(),
+                grid,
+            );
+            let mut baby2 = Creature::new(
+                self.creature_type,
+                self.x_coord,
+                self.y_coord,
+                self.program.clone(),
+                grid,
+            );
+
             baby1.rest(6, grid);
             baby2.rest(6, grid);
             vec![baby1, baby2]
@@ -219,16 +241,18 @@ impl Creature {
     }
 
     fn is_eaten(&mut self, grid: &mut Grid) -> bool {
-        if self.creature_type == CreatureType::Prey && grid.location(self).has_killed_prey() && self.visible {
+        if self.creature_type == CreatureType::Prey
+            && grid.location(self).has_killed_prey()
+            && self.visible
+        {
             self.change_energy(-self.energy, grid);
             grid.location(self).remove_killed_prey();
             return true;
         }
-        return false;
+        false
     }
 
     pub fn act(&mut self, grid: &mut Grid) -> Vec<Creature> {
-
         // We count down to 0 to perform the next action.
         if self.count_down > 0 {
             self.count_down -= 1;
@@ -245,19 +269,27 @@ impl Creature {
         }
 
         if self.count_down == 0 {
-            
             // Long actions macke the creature invisible. When we are about to do a new action the creature becomes
             // visible again.
-            if self.visible == false {
+            if !self.visible {
                 self.set_visible(grid);
             }
 
             let new_action = self.program.execute(self.energy, self.awake_daily);
 
             let new_creatures: Vec<Creature> = match new_action {
-                Action::Move(dir) => { self.movee(dir, grid); Vec::new() }
-                Action::Rest(count) => { self.rest(count, grid); Vec::new() }
-                Action::Hunt(dir) => { self.hunt(dir, grid); Vec::new() }
+                Action::Move(dir) => {
+                    self.movee(dir, grid);
+                    Vec::new()
+                }
+                Action::Rest(count) => {
+                    self.rest(count, grid);
+                    Vec::new()
+                }
+                Action::Hunt(dir) => {
+                    self.hunt(dir, grid);
+                    Vec::new()
+                }
                 Action::Breed(dir) => self.breed(dir, grid),
                 _ => Vec::new(),
             };
@@ -267,13 +299,13 @@ impl Creature {
             if self.is_dead() {
                 if self.visible {
                     match self.creature_type {
-                        CreatureType::Predator => grid.location(self).remove_predator(0),              
-                        CreatureType::Prey => grid.location(self).remove_prey(0), 
+                        CreatureType::Predator => grid.location(self).remove_predator(0),
+                        CreatureType::Prey => grid.location(self).remove_prey(0),
                     }
                 } else {
                     match self.creature_type {
-                        CreatureType::Predator => grid.location(self).remove_resting_predator(),              
-                        CreatureType::Prey => grid.location(self).remove_resting_prey(), 
+                        CreatureType::Predator => grid.location(self).remove_resting_predator(),
+                        CreatureType::Prey => grid.location(self).remove_resting_prey(),
                     }
                 }
             }

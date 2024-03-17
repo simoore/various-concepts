@@ -12,10 +12,10 @@ pub struct Location {
 #[derive(Debug)]
 pub enum LocationStatus {
     PreyHere,
-    PredHere, 
-    PreyRestingHere, 
+    PredHere,
+    PreyRestingHere,
     PredRestingHere,
-    NothingHere,
+    Nothing,
 }
 
 impl Location {
@@ -31,7 +31,7 @@ impl Location {
         }
     }
 
-    pub fn has_prey(&self) -> bool{
+    pub fn has_prey(&self) -> bool {
         self.prey_num > 0
     }
 
@@ -66,28 +66,28 @@ impl Location {
     pub fn add_predator(&mut self, energy: i32) {
         self.pred_num += 1;
         if energy > 25 {
-            self.pred_breed +=1;
+            self.pred_breed += 1;
         }
     }
 
     pub fn add_prey(&mut self, energy: i32) {
         self.prey_num += 1;
         if energy > 25 {
-            self.prey_breed +=1;
+            self.prey_breed += 1;
         }
     }
 
     pub fn remove_predator(&mut self, energy: i32) {
         self.pred_num -= 1;
         if energy > 25 {
-            self.pred_breed -=1;
+            self.pred_breed -= 1;
         }
     }
 
     pub fn remove_prey(&mut self, energy: i32) {
         self.prey_num -= 1;
         if energy > 25 {
-            self.prey_breed -=1;
+            self.prey_breed -= 1;
         }
     }
 
@@ -131,9 +131,8 @@ impl Location {
         self.remove_resting_predator();
     }
 
-
     /// When a prey awakens it is removed from the resting count, and added back into the prey count.
-    /// 
+    ///
     /// @param energy
     ///     If the creatures energy is above a threshold, it is also added to the breed count.
     pub fn awake_prey(&mut self, energy: i32) {
@@ -141,17 +140,23 @@ impl Location {
         self.remove_resting_prey();
     }
 
-
     /// The location status is used to visualize the location on the UI.
     ///
     /// @return
     ///     The location status, that is, if the location contains predators or prey.
     pub fn status(&self) -> LocationStatus {
-        if self.pred_num > 0 { return LocationStatus::PredHere; }
-        if self.prey_num > 0 { return LocationStatus::PreyHere; }
-        if self.pred_resting > 0 { return LocationStatus::PredRestingHere; }
-        if self.prey_resting > 0 { return LocationStatus::PreyRestingHere; }
-        LocationStatus::NothingHere    
+        if self.pred_num > 0 {
+            return LocationStatus::PredHere;
+        }
+        if self.prey_num > 0 {
+            return LocationStatus::PreyHere;
+        }
+        if self.pred_resting > 0 {
+            return LocationStatus::PredRestingHere;
+        }
+        if self.prey_resting > 0 {
+            return LocationStatus::PreyRestingHere;
+        }
+        LocationStatus::Nothing
     }
-    
 }
