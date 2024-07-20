@@ -1,0 +1,20 @@
+{
+    "configurations": [
+        {
+            "name": "app",
+            "includePath": [
+                "${workspaceFolder}",
+                "${workspaceFolder}/include",
+                "${workspaceFolder}/build-debug/_deps/spdlog-src/include",
+                "${workspaceFolder}/build-debug/_deps/cppzmq-src",
+                "${workspaceFolder}/build-debug/_deps/libzmq-src/include"
+            ],
+            "defines": [],
+            "compilerPath": "C:/msys64/ucrt64/bin/g++",
+            "cStandard": "gnu17",
+            "cppStandard": "gnu++23",
+            "intelliSenseMode": "windows-gcc-x64"
+        }
+    ],
+    "version": 4
+}
