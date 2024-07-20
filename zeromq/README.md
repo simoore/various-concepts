@@ -1,3 +1,10 @@
+## Install C++ ZeroMQ Libraries in Msys2
+
+```bash
+pacman -S mingw-w64-ucrt-x86_64-zeromq
+pacman -S mingw-w64-ucrt-x86_64-cppzmq
+```
+
 ## Example: Error Handling for Send Errors
 
 ```python

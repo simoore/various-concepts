@@ -1,9 +1,10 @@
 #pragma once
 
 #include <memory>
+#include <zmq.hpp>
 
 #include "spdlog/spdlog.h"
-#include "zmq.hpp"
+
 
 /// Encaptulates a ZeroMQ PUB socket.
 class Sub {
