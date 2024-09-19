@@ -4,6 +4,7 @@ cargo new zmq_logger
 cd zmq_logger
 cargo build
 
+# Add dependencies
 cargo add zmq
 cargo add -F static hdf5-sys
 cargo add hdf5
