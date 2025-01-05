@@ -475,7 +475,7 @@ std::uint64_t recursiveSum(std::uint32_t lo, std::uint32_t hi, std::uint32_t dep
 
 void divideAndConquerDemo() {
     std::uint64_t total = recursiveSum(0, 1000000000);
-    printf("Total: %lld\n", total);
+    printf("Total: %llu\n", total);
 }
 
 } // namespace DivideAndConquerDemo

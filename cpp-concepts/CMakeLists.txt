@@ -42,6 +42,7 @@ add_executable(RangesApp src/ranges.cpp)
 add_executable(ReverseApp src/reverse.cpp)
 add_executable(QuickSortApp src/quick_sort.cpp)
 add_executable(ThreadPoolApp src/thread_pools.cpp)
+add_executable(TreeApp src/tree.cpp)
 add_executable(UniqueApp src/unique.cpp)
 add_executable(VectorApp src/vector.cpp)
 
