@@ -1,12 +1,12 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// In this example
+// In this example we demonstrate asynchronous and synchrous use ot boost asio timers.
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#include <iostream>
 #include <boost/asio.hpp>
+#include <print>
 
 void print(const boost::system::error_code &) {
-    std::cout << "Hello from asynchronouns timer" << std::endl;
+    std::println("Hello from asynchronouns timer");
 }
 
 int main() {
@@ -20,6 +20,6 @@ int main() {
     // using a timer synchronously
     boost::asio::steady_timer timer(io, boost::asio::chrono::seconds(5));
     timer.wait();
-    std::cout << "Hello, world!" << std::endl;
+    std::println("Hello, world!");
     return 0;
 }

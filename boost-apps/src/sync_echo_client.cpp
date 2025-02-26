@@ -7,8 +7,8 @@ namespace tcpechoclient {
 
 std::string read(ip::tcp::socket &socket) {
     streambuf buf;
-    read_until(socket, buf, "\n");
-    std::string data = buffer_cast<const char *>(buf.data());
+    size_t n = read_until(socket, buf, "\n");
+    std::string data{reinterpret_cast<const char *>(buf.data().data()), n};
     return data;
 }
 
@@ -27,7 +27,7 @@ int main() {
     ip::tcp::socket socket(io);
 
     // connection
-    socket.connect(ip::tcp::endpoint(ip::address::from_string("127.0.0.1"), 12345));
+    socket.connect(ip::tcp::endpoint(ip::make_address_v4("127.0.0.1"), 12345));
 
     // request/message from client
     const std::string msg = "Hello from Client!\n";
@@ -45,7 +45,7 @@ int main() {
     if (error && error != boost::asio::error::eof) {
         std::cout << "receive failed: " << error.message() << std::endl;
     } else {
-        const char* data = boost::asio::buffer_cast<const char*>(receiveBuffer.data());
+        const char* data = reinterpret_cast<const char*>(receiveBuffer.data().data());
         std::cout << data << std::endl;
     }
     return 0;

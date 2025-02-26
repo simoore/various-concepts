@@ -1,5 +1,7 @@
 #include <boost/asio.hpp>
 #include <iostream>
+#include <iterator>
+#include <print>
 
 using namespace boost::asio;
 
@@ -8,7 +10,9 @@ namespace tcpechoserver {
 std::string read(ip::tcp::socket &socket) {
     streambuf buf;
     read_until(socket, buf, "\n");
-    std::string data = buffer_cast<const char *>(buf.data());
+    std::istream is(&buf);
+    std::string data;
+    is >> data;
     return data;
 }
 
@@ -26,7 +30,7 @@ int main() {
     auto endpoint = ip::tcp::endpoint(ip::tcp::v4(), 12345);
 
     // The acceptor listens for a connection.
-    boost::asio::ip::tcp::acceptor acceptor(io, endpoint);
+    ip::tcp::acceptor acceptor(io, endpoint);
 
     // Create socket.
     ip::tcp::socket sock(io);
@@ -40,7 +44,7 @@ int main() {
 
     // write operation
     tcpechoserver::send(sock, "Hello From Server!");
-    std::cout << "Server sent hello message to client" << std::endl;
+    std::println("Server sent hello message to client");
 
     return 0;
 }
