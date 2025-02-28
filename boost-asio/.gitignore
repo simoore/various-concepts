@@ -1,4 +1,3 @@
 build*/
-async_*
-coroutines_*
+async_http_*
 simple_http_*
