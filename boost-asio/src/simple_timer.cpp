@@ -3,10 +3,10 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #include <boost/asio.hpp>
-#include <print>
+#include "spdlog/fmt/fmt.h"
 
 void print(const boost::system::error_code &) {
-    std::println("Hello from asynchronouns timer");
+    fmt::print("Hello from asynchronouns timer\n");
 }
 
 int main() {
@@ -20,6 +20,6 @@ int main() {
     // using a timer synchronously
     boost::asio::steady_timer timer(io, boost::asio::chrono::seconds(5));
     timer.wait();
-    std::println("Hello, world!");
+    fmt::print("Hello, world!\n");
     return 0;
 }

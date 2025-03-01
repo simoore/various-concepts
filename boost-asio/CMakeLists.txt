@@ -13,8 +13,11 @@ FetchContent_MakeAvailable(spdlog)
 
 function(boost_app target srcs)
     add_executable(${target} ${srcs})
-    target_include_directories(${target} PRIVATE $ENV{BOOST_ROOT} spdlog)
-    target_compile_definitions(${target} PRIVATE _WIN32_WINNT=0x0A00)
+    target_link_libraries(${target} PRIVATE spdlog)
+    if (WIN32)
+        target_include_directories(${target} PRIVATE $ENV{BOOST_ROOT})
+        target_compile_definitions(${target} PRIVATE _WIN32_WINNT=0x0A00)
+    endif()
 endfunction()
 
 boost_app(asyncserver src/async_echo_server.cpp)

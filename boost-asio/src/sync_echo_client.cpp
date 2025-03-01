@@ -1,5 +1,5 @@
 #include <boost/asio.hpp>
-#include <print>
+#include "spdlog/fmt/fmt.h"
 
 namespace tcpechoclient {
 
@@ -8,10 +8,10 @@ void recv(boost::asio::ip::tcp::socket &socket) {
     boost::system::error_code error;
     read(socket, receiveBuffer, boost::asio::transfer_all(), error);
     if (error && error != boost::asio::error::eof) {
-        std::println("receive failed: {}", error.message());
+        fmt::print("receive failed: {}\n", error.message());
     } else {
         const std::string data = reinterpret_cast<const char*>(receiveBuffer.data().data());
-        std::println("{}", data);
+        fmt::println("{}\n", data);
     }
 }
 
@@ -19,9 +19,9 @@ void send(boost::asio::ip::tcp::socket &socket, const std::string &msg) {
     boost::system::error_code error;
     boost::asio::write(socket, boost::asio::buffer(msg), error);
     if (!error) {
-        std::println("Client sent hello message!");
+        fmt::println("Client sent hello message!\n");
     } else {
-        std::println("send failed: {}", error.message());
+        fmt::println("send failed: {}\n", error.message());
     }
 }
 

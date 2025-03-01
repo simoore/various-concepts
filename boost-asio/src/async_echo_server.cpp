@@ -1,7 +1,7 @@
 #include <boost/asio.hpp>
 #include <memory>
-#include <print>
 #include <string_view>
+#include "spdlog/fmt/fmt.h"
 
 namespace asyncserver {
 
@@ -51,10 +51,10 @@ public:
 
         auto writeToken = [ptr](const boost::system::error_code &err, size_t) {
             if (!err) {
-                std::println("Server echoed!");
+                fmt::print("Server echoed!\n");
                 // Can call async_read_some again.
             } else {
-                std::println("error: {}", err.message());
+                fmt::print("error: {}\n", err.message());
                 ptr->mSocket.close();
             }
         };
@@ -62,10 +62,10 @@ public:
         auto readToken = [ptr, writeToken](const boost::system::error_code &err, size_t bytesTransferred) {
             if (!err) {
                 std::string msg{ptr->mData, bytesTransferred};
-                std::println("Server received: {}", msg);
+                fmt::print("Server received: {}\n", msg);
                 ptr->mSocket.async_write_some(boost::asio::buffer(ptr->mData, bytesTransferred), writeToken);
             } else {
-                std::println("error: {}", err.message());
+                fmt::print("error: {}\n", err.message());
                 ptr->mSocket.close();
             }
         };

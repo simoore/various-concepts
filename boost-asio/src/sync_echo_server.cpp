@@ -1,7 +1,6 @@
 #include <boost/asio.hpp>
-#include <iostream>
 #include <iterator>
-#include <print>
+#include "spdlog/fmt/fmt.h"
 
 using namespace boost::asio;
 
@@ -40,11 +39,11 @@ int main() {
 
     // read message.
     std::string msg = tcpechoserver::read(sock);
-    std::cout << msg << std::endl;
+    fmt::print("{}\n", msg);
 
     // write operation
     tcpechoserver::send(sock, "Hello From Server!");
-    std::println("Server sent hello message to client");
+    fmt::println("Server sent hello message to client");
 
     return 0;
 }
