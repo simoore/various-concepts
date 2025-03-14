@@ -1,0 +1,23 @@
+[project]
+name = "mygrpc"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "grpcio>=1.71.0",
+    "grpcio-tools>=1.71.0",
+    "ruff>=0.10.0",
+]
+
+[project.scripts]
+hello = "mygrpc.main:main"
+client = "mygrpc.greeter_client:run"
+server = "mygrpc.greeter_server:serve"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/mygrpc"]

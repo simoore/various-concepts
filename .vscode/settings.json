@@ -93,5 +93,6 @@
         "xtree": "cpp",
         "xutility": "cpp",
         "syncstream": "cpp"
-    }
+    },
+    "cmake.ignoreCMakeListsMissing": true
 }

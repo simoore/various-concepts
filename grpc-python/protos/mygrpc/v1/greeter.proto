@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+// This must match your expected python import.
+package mygrpc.v1;
+
+service Greeter {
+    rpc SayHello (HelloRequest) returns (HelloReponse) {}
+    rpc SayHelloAgain (HelloRequest) returns (HelloReponse) {}
+}
+
+message HelloRequest {
+    string name = 1;
+}
+
+message HelloReponse {
+    string message = 1;
+}
