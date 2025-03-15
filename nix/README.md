@@ -123,3 +123,5 @@ with Nix”.
 
 Follow the learn more links here https://nix.dev/tutorials/nix-language#learn-more
 The standard env https://nixos.org/manual/nixpkgs/unstable/#part-stdenv
+
+Current tutorial: https://nix.dev/tutorials/working-with-local-files

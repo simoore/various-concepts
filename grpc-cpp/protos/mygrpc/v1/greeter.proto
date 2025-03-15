@@ -5,13 +5,13 @@ package mygrpc.v1;
 
 service Greeter {
     rpc SayHello (HelloRequest) returns (HelloResponse) {}
-    rpc SayHelloAgain (HelloRequest) returns (HelloReponse) {}
+    rpc SayHelloAgain (HelloRequest) returns (HelloResponse) {}
 }
 
 message HelloRequest {
     string name = 1;
 }
 
-message HelloReponse {
+message HelloResponse {
     string message = 1;
 }

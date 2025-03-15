@@ -1,0 +1,22 @@
+{
+    "configurations": [
+        {
+            "name": "app",
+            "includePath": [
+                "${workspaceFolder}",
+                "${workspaceFolder}/build-release/_deps/spdlog-src/include",
+                "${workspaceFolder}/build-release/_deps/grpc-src/include",
+                "${workspaceFolder}/build-release/_deps/grpc-src/third_party/abseil-cpp",
+                "${workspaceFolder}/build-release/_deps/grpc-src/third_party/protobuf/src",
+                "${workspaceFolder}/generated"
+            ],
+            "defines": [
+            ],
+            "compilerPath": "/usr/bin/g++",
+            "cStandard": "c23",
+            "cppStandard": "c++23",
+            "intelliSenseMode": "gcc-x64"
+        }
+    ],
+    "version": 4
+}
