@@ -3,17 +3,15 @@
         {
             "name": "app",
             "includePath": [
-                "${workspaceFolder}",
-                "${env:BOOST_ROOT}",
-                "build-debug/_deps/spdlog-src/include"
+                "${workspaceFolder}/build-release/_deps/spdlog-src/include"
             ],
             "defines": [
                 "BOOST_ASIO_HAS_CO_AWAIT"
             ],
-            "compilerPath": "C:/Program Files/llvm/bin/clang++",
+            "compilerPath": "/usr/bin/g++",
             "cStandard": "c23",
             "cppStandard": "c++23",
-            "intelliSenseMode": "windows-clang-x86"
+            "intelliSenseMode": "gcc-x64"
         }
     ],
     "version": 4
