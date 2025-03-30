@@ -148,3 +148,4 @@ openssl verify -CAfile smooreca.pem server.crt
 
 * <https://arminreiter.com/2022/01/create-your-own-certificate-authority-ca-using-openssl/>
 * <https://learn.microsoft.com/en-us/azure/application-gateway/self-signed-certificates>
+* <https://github.com/rustls/hyper-rustls/blob/main/examples/refresh-certificates.sh>
