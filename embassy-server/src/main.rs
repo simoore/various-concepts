@@ -10,11 +10,8 @@ use {defmt_rtt as _, panic_probe as _};
 #[embassy_executor::task]
 async fn blink_task(mut led: Output<'static>) -> ! {
     loop {
-        defmt::info!("high");
         led.set_high();
         Timer::after_millis(500).await;
-
-        defmt::info!("low");
         led.set_low();
         Timer::after_millis(500).await;
     }
@@ -65,7 +62,7 @@ async fn main(spawner: Spawner) {
     let led = Output::new(p.PB14, Level::High, Speed::Low);
     spawner.spawn(blink_task(led)).unwrap();
     spawner.spawn(echo_server_task(stack, 2345)).unwrap();
-    spawner.spawn(echo_server_task(stack, 6789)).unwrap();
+    //spawner.spawn(echo_server_task(stack, 6789)).unwrap();
 
     loop {
         defmt::info!("This is the main loop!");

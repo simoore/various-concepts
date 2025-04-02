@@ -21,13 +21,8 @@ https://embassy.dev/book/
 
 ## Deployment
 
-This is a rust alternative to OpenOCD
+This is a rust alternative to OpenOCD, download the binaries from github, and add it to your path
 
 <https://probe.rs/docs/tools/cargo-flash/>
 
-```bash
-# Install probe-rs
-curl --proto '=https' --tlsv1.2 -LsSf https://github.com/probe-rs/probe-rs/releases/latest/download/probe-rs-tools-installer.sh | sh
-
-cargo flash --release --chip STM32H743ZI
-```
+Then the `.cargo/config` has bee setup so you just need to use `cargo run` to flash and execute.
