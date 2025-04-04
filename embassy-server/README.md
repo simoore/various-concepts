@@ -14,10 +14,8 @@ https://embassy.dev/book/
 
 ## Features
 
-* TCP Echo Server with default static IP and DHCP
-* Debug logs via UART
-* NTP client
-* Networked bootloader
+* TCP Echo Server with default static IP
+* Debug logs
 
 ## Deployment
 
@@ -26,3 +24,10 @@ This is a rust alternative to OpenOCD, download the binaries from github, and ad
 <https://probe.rs/docs/tools/cargo-flash/>
 
 Then the `.cargo/config` has bee setup so you just need to use `cargo run` to flash and execute.
+
+It seems that cargo doesn't read `.cargo/config.toml` for environmental variables on windows. Instead use this
+for setting log level,
+
+```batch
+set DEFMT_LOG=debug
+```

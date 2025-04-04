@@ -14,16 +14,19 @@ use embassy_stm32::rcc::{
 };
 use embassy_stm32::{Config, Peripheral, Peripherals};
 use heapless::Vec;
-use static_cell::StaticCell;
 
+use crate::static_cell::StaticCell;
+
+
+#[unsafe(link_section = ".dma_mem_d2")]
 static PACKETS: StaticCell<PacketQueue<4, 4>> = StaticCell::new();
+
 static RESOURCES: StaticCell<StackResources<3>> = StaticCell::new();
 
 type Device = Ethernet<'static, ETH, GenericSMI>;
 
 embassy_stm32::bind_interrupts!(struct Irqs {
     ETH => embassy_stm32::eth::InterruptHandler;
-    RNG => embassy_stm32::rng::InterruptHandler<embassy_stm32::peripherals::RNG>;
 });
 
 /// This task services the network stack.
@@ -74,9 +77,13 @@ pub async fn init_network(
     tx_d1: impl Peripheral<P = impl TXD1Pin<ETH>> + 'static,
     tx_en: impl Peripheral<P = impl TXEnPin<ETH>> + 'static,
 ) -> embassy_net::Stack<'static> {
+
+    defmt::info!("packets address: {=usize}", &PACKETS as *const _ as usize);
+    defmt::info!("resources address: {=usize}", &RESOURCES as *const _ as usize);
+
     let mac_addr = [0x00, 0x00, 0xDE, 0xAD, 0xBE, 0xEF];
     let device = Ethernet::new(
-        PACKETS.init(PacketQueue::<4, 4>::new()),
+        PACKETS.init(PacketQueue::new()),
         eth,
         Irqs,
         ref_clk,
@@ -92,7 +99,6 @@ pub async fn init_network(
         mac_addr,
     );
 
-    //let config = embassy_net::Config::dhcpv4(Default::default());
     let config = embassy_net::Config::ipv4_static(embassy_net::StaticConfigV4 {
         address: Ipv4Cidr::new(Ipv4Addr::new(192, 168, 10, 3), 24),
         dns_servers: Vec::new(),
